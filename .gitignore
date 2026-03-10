@@ -3,6 +3,8 @@ __pycache__/
 *.pyc
 *.pyo
 node_modules/
+venv/
+.venv/
 .vscode/
 .idea/
 .DS_Store

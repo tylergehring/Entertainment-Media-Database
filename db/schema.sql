@@ -1,0 +1,74 @@
+-- Entertainment Media Database Schema
+
+CREATE TABLE IF NOT EXISTS Nodes (
+    NodeID      INT AUTO_INCREMENT PRIMARY KEY,
+    NodeType    ENUM('Movie', 'Actor', 'Director') NOT NULL,
+    CreatedAt   DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS Movie (
+    NodeID      INT NOT NULL,
+    MovieID     VARCHAR(50) NOT NULL UNIQUE,
+    Title       VARCHAR(255) NOT NULL,
+    Rating      VARCHAR(10),
+    ReleaseDate DATE,
+    Genre       VARCHAR(100),
+    Runtime     INT,
+    PRIMARY KEY (NodeID),
+    FOREIGN KEY (NodeID) REFERENCES Nodes(NodeID) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS Actor (
+    NodeID      INT NOT NULL,
+    ActorID     VARCHAR(50) NOT NULL UNIQUE,
+    Name        VARCHAR(255) NOT NULL,
+    DateOfBirth DATE,
+    Nationality VARCHAR(100),
+    PRIMARY KEY (NodeID),
+    FOREIGN KEY (NodeID) REFERENCES Nodes(NodeID) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS Director (
+    NodeID      INT NOT NULL,
+    DirectorID  VARCHAR(50) NOT NULL UNIQUE,
+    Name        VARCHAR(255) NOT NULL,
+    DateOfBirth DATE,
+    Nationality VARCHAR(100),
+    Awards      VARCHAR(255),
+    PRIMARY KEY (NodeID),
+    FOREIGN KEY (NodeID) REFERENCES Nodes(NodeID) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS Edges (
+    EdgeID       INT AUTO_INCREMENT PRIMARY KEY,
+    SourceNodeID INT NOT NULL,
+    TargetNodeID INT NOT NULL,
+    EdgeType     ENUM('ACTED_IN', 'DIRECTED') NOT NULL,
+    Metadata     JSON,
+    CreatedAt    DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (SourceNodeID) REFERENCES Nodes(NodeID) ON DELETE CASCADE,
+    FOREIGN KEY (TargetNodeID) REFERENCES Nodes(NodeID) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS Graphs (
+    GraphID     INT AUTO_INCREMENT PRIMARY KEY,
+    Name        VARCHAR(255) NOT NULL,
+    Description VARCHAR(500),
+    CreatedAt   DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS GraphNodes (
+    GraphID INT NOT NULL,
+    NodeID  INT NOT NULL,
+    PRIMARY KEY (GraphID, NodeID),
+    FOREIGN KEY (GraphID) REFERENCES Graphs(GraphID) ON DELETE CASCADE,
+    FOREIGN KEY (NodeID)  REFERENCES Nodes(NodeID)  ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS GraphEdges (
+    GraphID INT NOT NULL,
+    EdgeID  INT NOT NULL,
+    PRIMARY KEY (GraphID, EdgeID),
+    FOREIGN KEY (GraphID) REFERENCES Graphs(GraphID) ON DELETE CASCADE,
+    FOREIGN KEY (EdgeID)  REFERENCES Edges(EdgeID)  ON DELETE CASCADE
+);

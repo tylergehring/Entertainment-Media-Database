@@ -1,13 +1,22 @@
-import os
-
 from flask import Flask
 from flask_cors import CORS
 
 from db import get_db_connection
+from routes.movies import movies_bp
+from routes.actors import actors_bp
+from routes.directors import directors_bp
+from routes.edges import edges_bp
+from routes.graphs import graphs_bp
 
 
 app = Flask(__name__)
 CORS(app)
+
+app.register_blueprint(movies_bp)
+app.register_blueprint(actors_bp)
+app.register_blueprint(directors_bp)
+app.register_blueprint(edges_bp)
+app.register_blueprint(graphs_bp)
 
 
 @app.route("/api/health")

@@ -5,13 +5,14 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD: root
       MYSQL_DATABASE: mydatabase
-      MYSQL_USER: root
-      MYSQL_PASSWORD: root
+      MYSQL_USER: admin
+      MYSQL_PASSWORD: admin
     ports:
       - "3306:3306"
     volumes:
       - db_data:/var/lib/mysql
-      - ./backend/schema.sql:/docker-entrypoint-initdb.d/schema.sql
+      - ./db/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
+      - ./db/seed.sql:/docker-entrypoint-initdb.d/02-seed.sql
 
   backend:
     build: ./backend
@@ -22,10 +23,10 @@ services:
       - ./backend:/app
     environment:
       - FLASK_APP=app.py
-      - FLASK_ENV=development
+      - FLASK_DEBUG=1
       - DB_HOST=db
-      - DB_USER=myuser
-      - DB_PASSWORD=mypassword
+      - DB_USER=admin
+      - DB_PASSWORD=admin
       - DB_NAME=mydatabase
     depends_on:
       - db
