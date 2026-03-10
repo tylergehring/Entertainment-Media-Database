@@ -5,12 +5,7 @@ EMDB is a graph-based media database that visualizes relationships between actor
 The system stores media information in a structured database and exposes it through a REST API. A web frontend renders the data as a dynamic graph, enabling users to easily discover connections such as shared actors, director collaborations, and film relationships.
 
 
-
-### Prerequisites
-
-- [Docker](https://docs.docker.com/get-docker/) and Docker Compose
-
-### Run the project
+### Run
 
 ```bash
 docker compose up --build
