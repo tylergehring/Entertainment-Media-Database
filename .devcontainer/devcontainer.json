@@ -1,0 +1,70 @@
+{
+  "name": "EMDB Dev Container",
+
+  // Reuse the existing Docker Compose stack
+  "dockerComposeFile": ["../docker-compose.yml", "docker-compose.devcontainer.yml"],
+  "service": "backend",
+
+  // Mount the full project root so .devcontainer (and frontend/db) are visible
+  "workspaceFolder": "/workspace",
+  "runServices": ["backend", "db", "frontend"],
+  "shutdownAction": "stopCompose",
+
+  // Forward all three service ports to localhost
+  "forwardPorts": [5000, 5173, 3306],
+  "portsAttributes": {
+    "5000": { "label": "Flask API" },
+    "5173": { "label": "Vite Frontend" },
+    "3306": { "label": "MySQL" }
+  },
+
+  "features": {
+    "ghcr.io/devcontainers/features/git:1": {},
+    "ghcr.io/devcontainers/features/node:1": {}
+  },
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        // Python
+        "ms-python.python",
+        "ms-python.black-formatter",
+        "ms-python.flake8",
+        // TypeScript / React
+        "dbaeumer.vscode-eslint",
+        // REST API / HTTP testing
+        "humao.rest-client",
+        // Docker
+        "ms-azuretools.vscode-docker",
+        // Database
+        "cweijan.vscode-mysql-client2",
+        // General DX
+        "eamodio.gitlens",
+        "esbenp.prettier-vscode"
+      ],
+      "settings": {
+        "terminal.integrated.defaultProfile.linux": "bash",
+        "terminal.integrated.profiles.linux": {
+          "bash": { "path": "/bin/bash" }
+        },
+        "python.defaultInterpreterPath": "/usr/local/bin/python",
+        "[python]": {
+          "editor.defaultFormatter": "ms-python.black-formatter",
+          "editor.formatOnSave": true
+        },
+        "[typescript]": {
+          "editor.defaultFormatter": "esbenp.prettier-vscode",
+          "editor.formatOnSave": true
+        },
+        "[typescriptreact]": {
+          "editor.defaultFormatter": "esbenp.prettier-vscode",
+          "editor.formatOnSave": true
+        },
+        "editor.formatOnSave": true
+      }
+    }
+  },
+
+  // Install Python deps, frontend node_modules, and configure git after container starts
+  "postCreateCommand": "git config --global --add safe.directory /workspace && git config --global core.editor 'code --wait' && pip install -r /app/requirements.txt && npm install --prefix /workspace/frontend"
+}
