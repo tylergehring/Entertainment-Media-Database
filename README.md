@@ -32,3 +32,7 @@ All development should be done inside the dev container:
 > **Adding dependencies:** Python packages go in `requirements.txt`. Frontend packages should be installed with `npm install` inside the container.
 
 **Application Will Start Automatically** when the devcontainer starts up
+
+### REST API DOCUMENTATION
+
+Rest API is Documented with the swagger client. Docs can be found at http://localhost:5000/apidocs/
