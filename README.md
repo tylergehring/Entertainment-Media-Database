@@ -13,6 +13,7 @@ docker compose up --build
 - Frontend: http://localhost:5173
 - Backend API: http://localhost:5000
 - MySQL: localhost:3306
+- Api Docs http://localhost:5000/apidocs/
 
 ### Reset the database
 
