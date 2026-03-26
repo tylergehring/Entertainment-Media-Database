@@ -1,9 +1,13 @@
 from flask import Blueprint, jsonify
+from flasgger import swag_from
 from db import get_db_connection
+from swagger_specs import ACTORS
 
-actors_bp = Blueprint('actors', __name__, url_prefix='/api/actors')
+actors_bp = Blueprint("actors", __name__, url_prefix="/api/actors")
 
-@actors_bp.get('/')
+
+@actors_bp.get("/")
+@swag_from(ACTORS["get_actors"])
 def get_actors():
     conn = get_db_connection()
     try:
@@ -15,8 +19,31 @@ def get_actors():
         conn.close()
 
 
-# GET    /api/actors/<node_id>    - get actor by NodeID
-# GET    /api/actors/search?name= - search actors by name
-# POST   /api/actors              - create an actor (creates Node + Actor)
-# PUT    /api/actors/<node_id>    - update an actor
-# DELETE /api/actors/<node_id>    - delete an actor (cascades to Node)
+@actors_bp.get("/search")
+@swag_from(ACTORS["search_actors"])
+def search_actors():
+    return jsonify({"message": "Not implemented"}), 501
+
+
+@actors_bp.get("/<int:node_id>")
+@swag_from(ACTORS["get_actor"])
+def get_actor(node_id):
+    return jsonify({"message": "Not implemented"}), 501
+
+
+@actors_bp.post("/")
+@swag_from(ACTORS["create_actor"])
+def create_actor():
+    return jsonify({"message": "Not implemented"}), 501
+
+
+@actors_bp.put("/<int:node_id>")
+@swag_from(ACTORS["update_actor"])
+def update_actor(node_id):
+    return jsonify({"message": "Not implemented"}), 501
+
+
+@actors_bp.delete("/<int:node_id>")
+@swag_from(ACTORS["delete_actor"])
+def delete_actor(node_id):
+    return jsonify({"message": "Not implemented"}), 501
