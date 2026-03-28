@@ -20,7 +20,8 @@ docker compose up --build
 To wipe the database and re-run schema + seed data:
 
 ```bash
-docker compose down -v && docker compose up --build
+
+
 ```
 
 ## Development
