@@ -659,6 +659,73 @@ EDGES = {
 }
 
 # ---------------------------------------------------------------------------
+# Co-Star Network
+# ---------------------------------------------------------------------------
+
+COSTAR = {
+    "get_costar_network": {
+        "tags": ["Co-Star"],
+        "summary": "Get co-star network for an actor",
+        "description": (
+            "Given an ActorID, finds all movies they acted in, then finds all other "
+            "actors in those same movies. Each shared movie creates a co-star edge. "
+            "Returns the center actor, all co-stars, and edges weighted by the number "
+            "of shared movies."
+        ),
+        "parameters": [
+            {
+                "name": "actor_id",
+                "in": "query",
+                "type": "string",
+                "required": True,
+                "description": "The ActorID to build the co-star network around",
+            }
+        ],
+        "responses": {
+            200: {
+                "description": "Co-star network",
+                "schema": {
+                    "type": "object",
+                    "properties": {
+                        "center": {"$ref": "#/definitions/Actor"},
+                        "coStars": {
+                            "type": "array",
+                            "items": {
+                                "allOf": [
+                                    {"$ref": "#/definitions/Actor"},
+                                    {
+                                        "type": "object",
+                                        "properties": {
+                                            "sharedMovies": {
+                                                "type": "integer",
+                                                "description": "Number of movies shared with the center actor",
+                                            }
+                                        },
+                                    },
+                                ]
+                            },
+                        },
+                        "edges": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "source": {"type": "integer", "description": "NodeID of the center actor"},
+                                    "target": {"type": "integer", "description": "NodeID of the co-star"},
+                                    "weight": {"type": "integer", "description": "Number of shared movies"},
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+            400: {"description": "Missing actor_id parameter"},
+            404: {"description": "Actor not found"},
+        },
+    }
+}
+
+# ---------------------------------------------------------------------------
 # Graphs
 # ---------------------------------------------------------------------------
 
