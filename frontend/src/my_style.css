@@ -26,21 +26,6 @@
   filter: drop-shadow(0 0 2em #61dafbaa);
 }
 
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
-}
-
 .card {
   padding: 2em;
 }
@@ -311,13 +296,6 @@
   margin: 0;
 }
 
-/* ── Animations ── */
-@keyframes fadeUp {
-  from { opacity: 0; transform: translateY(20px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
-
 /* -- ammendments, organize later -- */
 
 
@@ -331,6 +309,6 @@
 }
 
 .emdb-logo {
-  height: 36px;    /* controls how tall it appears in the navbar */
+  height: 200px;    /* controls how tall it appears in the navbar */
   width: auto;     /* keeps the aspect ratio correct */
 }

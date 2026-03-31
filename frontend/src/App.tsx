@@ -1,12 +1,15 @@
 import { useState } from "react";
-import "./App.css";
+import logo from "./assets/EMDB_Logo_1.png";
 import Home from "./UserPages/home.tsx";
 import Movies from "./UserPages/movies.tsx";
 import Actors from "./UserPages/actors.tsx";
 import Directors from "./UserPages/directors.tsx";
 import Co_Star from "./TechnicalPages/Co_Star.tsx";
 import "./my_style.css";
+//import "./App.css";
 
+// from the legacy version of app.tsx
+// kept around for for safety, just in case, will be deleted in the future if there are no objections
 // interface Actor {
 //   NodeID: number
 //   ActorID: string
@@ -16,7 +19,7 @@ import "./my_style.css";
 // }
 
 // navgation states
-const navLinks = ["home", "movies", "actors", "directors", "co-star"];
+const navLinks = ["home", "movies", "actors", "directors", "co-stars"];
 
 // note to self add legal page navigation in the future
 
@@ -28,20 +31,29 @@ export default function App() {
     if (page === "movies") return <Movies />;
     if (page === "actors") return <Actors />;
     if (page === "directors") return <Directors />;
-    if (page === "co-star") return <Co_Star />;
+    if (page === "co-stars") return <Co_Star />;
   };
 
   return (
     <div className="emdb-home">
       {/* Navbar - stays on every page */}
       <header className="emdb-header">
-        <div
+        {/* <div
           className="emdb-logo"
           onClick={() => setPage("home")}
           style={{ cursor: "pointer" }}
         >
           EMDB
-        </div>
+        </div> */}
+
+        <img
+          src={logo}
+          alt="EMDB logo"
+          className="emdb-logo"
+          onClick={() => setPage("home")}
+          style={{ cursor: "pointer" }}
+        />
+
         <nav className="emdb-nav">
           {navLinks.map((link) => (
             <button
