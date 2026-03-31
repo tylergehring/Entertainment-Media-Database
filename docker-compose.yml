@@ -42,5 +42,17 @@ services:
     depends_on:
       - backend
 
+  phpmyadmin:
+    image: phpmyadmin:latest
+    restart: always
+    ports:
+      - "8080:80"
+    environment:
+      PMA_HOST: db
+      PMA_USER: admin
+      PMA_PASSWORD: admin
+    depends_on:
+      - db
+
 volumes:
   db_data:
