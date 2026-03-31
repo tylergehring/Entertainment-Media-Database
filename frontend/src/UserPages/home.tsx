@@ -1,6 +1,6 @@
 // home page
 import { useState } from "react";
-import "./my_style.css";
+import "../my_style.css";
 
 // temperary, for exmample
 const featured = [
@@ -13,15 +13,15 @@ const featured = [
 ];
 
 // temperary, will updated
-const navLinks = ["Movies", "Actors", "Directors"];
+//const navLinks = ["Movies", "Actors", "Directors"];
 
 export default function Home() {
   const [query, setQuery] = useState("");
-  const [activeNav, setActiveNav] = useState("Movies");
+  // const [activeNav, setActiveNav] = useState("Movies");
 
   return (
     <div className="emdb-home">
-      {/* Nav */}
+      {/* Nav
       <header className="emdb-header">
         <div className="emdb-logo">EMDB</div>
         <nav className="emdb-nav">
@@ -35,7 +35,7 @@ export default function Home() {
             </button>
           ))}
         </nav>
-      </header>
+      </header> */}
 
       {/* Hero */}
       <section className="emdb-hero">

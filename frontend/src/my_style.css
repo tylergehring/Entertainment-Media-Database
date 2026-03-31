@@ -316,3 +316,21 @@
   from { opacity: 0; transform: translateY(20px); }
   to   { opacity: 1; transform: translateY(0); }
 }
+
+
+/* -- ammendments, organize later -- */
+
+
+.emdb-footer {
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 2rem 3rem;
+  text-align: center;
+  font-size: 0.8rem;
+  color: #555;
+  letter-spacing: .05em;
+}
+
+.emdb-logo {
+  height: 36px;    /* controls how tall it appears in the navbar */
+  width: auto;     /* keeps the aspect ratio correct */
+}

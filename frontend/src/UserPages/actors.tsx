@@ -2,12 +2,22 @@
 import { useState } from "react";
 import "../my_style.css";
 
+// CREATE TABLE IF NOT EXISTS Actor (
+//     NodeID      INT NOT NULL,
+//     ActorID     VARCHAR(50) NOT NULL UNIQUE,
+//     Name        VARCHAR(255) NOT NULL,
+//     DateOfBirth DATE,
+//     Nationality VARCHAR(100),
+//     PRIMARY KEY (NodeID),
+//     FOREIGN KEY (NodeID) REFERENCES Nodes(NodeID) ON DELETE CASCADE
+// );
+
 interface Actor {
+  NodeID: number;
   ActorID: string;
   DateOfBirth: string;
   Name: string;
   Nationality: string;
-  NodeID: number;
 }
 
 export default function Actors() {
