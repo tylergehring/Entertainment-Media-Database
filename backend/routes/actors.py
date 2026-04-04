@@ -127,3 +127,29 @@ def delete_actor(node_id):
         return jsonify({"message": "Actor deleted"}), 200
     finally:
         conn.close()
+
+
+@actors_bp.get("/name/<string:name>")
+@swag_from(ACTORS["get_actors_by_name"])
+def get_actors_by_name(name):
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute("SELECT * FROM Actor WHERE Actor.Name LIKE %s", (f"%{name}%",))
+            actors = cursor.fetchall()
+        return jsonify(actors)
+    finally:
+        conn.close()
+
+
+@actors_bp.get("/nationality/<string:nationality>")
+@swag_from(ACTORS["get_actors_by_nationality"])
+def get_actors_by_nationality(nationality):
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute("SELECT * FROM Actor WHERE Actor.Nationality LIKE %s", (f"%{nationality}%",))
+            actors = cursor.fetchall()
+        return jsonify(actors)
+    finally:
+        conn.close()

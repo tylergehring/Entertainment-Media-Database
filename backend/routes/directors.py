@@ -127,3 +127,29 @@ def delete_director(node_id):
         return jsonify({"message": "Director deleted"}), 200
     finally:
         conn.close()
+
+
+@directors_bp.get("/name/<string:name>")
+@swag_from(DIRECTORS["get_directors_by_name"])
+def get_directors_by_name(name):
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute("SELECT * FROM Director WHERE Director.Name LIKE %s", (f"%{name}%",))
+            directors = cursor.fetchall()
+        return jsonify(directors)
+    finally:
+        conn.close()
+
+
+@directors_bp.get("/nationality/<string:nationality>")
+@swag_from(DIRECTORS["get_directors_by_nationality"])
+def get_directors_by_nationality(nationality):
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute("SELECT * FROM Director WHERE Director.Nationality LIKE %s", (f"%{nationality}%",))
+            directors = cursor.fetchall()
+        return jsonify(directors)
+    finally:
+        conn.close()

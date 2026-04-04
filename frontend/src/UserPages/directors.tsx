@@ -1,47 +1,135 @@
 // this is the page for displaying the directors in the database
-// import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import "../my_style.css";
 
-// CREATE TABLE IF NOT EXISTS Director (
-//     NodeID      INT NOT NULL,
-//     DirectorID  VARCHAR(50) NOT NULL UNIQUE,
-//     Name        VARCHAR(255) NOT NULL,
-//     DateOfBirth DATE,
-//     Nationality VARCHAR(100),
-//     Awards      VARCHAR(255),
-//     PRIMARY KEY (NodeID),
-//     FOREIGN KEY (NodeID) REFERENCES Nodes(NodeID) ON DELETE CASCADE
-// );
-
-// interface Director {
-//   NodeID: number;
-//   DirectorID: string;
-//   Name: string;
-//   DateOfBirth: string;
-//   Nationality: string;
-//   Awards: string;
-// }
+interface Director {
+  NodeID: number;
+  DirectorID: string;
+  Name: string;
+  DateOfBirth: string;
+  Nationality: string;
+  Awards: string;
+}
 
 export default function Directors() {
-  // const [directors, setDirectors] = useState<Director[]>([]);
+  const [allDirectors, setAllDirectors] = useState<Director[]>([]);
+  const [results, setResults] = useState<Director[] | null>(null);
+  const [search, setSearch] = useState("");
+  const [nationality, setNationality] = useState("All");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  // const fetchDirectors = () => {
-  //   fetch("/api/directors/")
-  //     .then((res) => res.json())
-  //     .then((data) => setDirectors(data));
-  // };
+  useEffect(() => {
+    setLoading(true);
+    fetch("/api/directors/")
+      .then((res) => res.json())
+      .then((data) => setAllDirectors(data))
+      .catch(() => setError("Failed to load directors"))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const nationalities = useMemo(() => {
+    const unique = Array.from(new Set(allDirectors.map((d) => d.Nationality).filter(Boolean))).sort();
+    return ["All", ...unique];
+  }, [allDirectors]);
+
+  const handleSearch = () => {
+    if (!search.trim()) return;
+    setLoading(true);
+    setError("");
+    setNationality("All");
+    fetch(`/api/directors/name/${encodeURIComponent(search.trim())}`)
+      .then((res) => {
+        if (!res.ok) throw new Error("Request failed");
+        return res.json();
+      })
+      .then((data) => setResults(Array.isArray(data) ? data : [data]))
+      .catch(() => setError("Search failed"))
+      .finally(() => setLoading(false));
+  };
+
+  const handleNationalityChange = (selected: string) => {
+    setNationality(selected);
+    setSearch("");
+    setError("");
+    if (selected === "All") {
+      setResults(null);
+      return;
+    }
+    setLoading(true);
+    fetch(`/api/directors/nationality/${encodeURIComponent(selected)}`)
+      .then((res) => {
+        if (!res.ok) throw new Error("Request failed");
+        return res.json();
+      })
+      .then((data) => setResults(data))
+      .catch(() => setError("Failed to filter by nationality"))
+      .finally(() => setLoading(false));
+  };
+
+  const clear = () => {
+    setSearch("");
+    setNationality("All");
+    setResults(null);
+    setError("");
+  };
+
+  const displayed = results ?? allDirectors;
 
   return (
-    <>
-      <h1>Directors not yet implemented</h1>
-      {/* <button onClick={fetchDirectors}>Load Directors</button>
-      <ul>
-        {directors.map((director) => (
-          <li key={director.NodeID}>
-            {director.Name} — {director.Nationality}
+    <div>
+      <h1>Directors</h1>
+
+      <div style={{ display: "flex", gap: "0.75rem", marginBottom: "1.5rem", flexWrap: "wrap", alignItems: "center" }}>
+        <input
+          type="text"
+          placeholder="Search by name..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+          style={{ padding: "0.5rem", width: "280px", borderRadius: "4px", border: "1px solid #ccc" }}
+        />
+        <button onClick={handleSearch} disabled={loading || !search.trim()} style={{ padding: "0.5rem 1rem" }}>
+          Search
+        </button>
+        <select
+          value={nationality}
+          onChange={(e) => handleNationalityChange(e.target.value)}
+          style={{ padding: "0.5rem", borderRadius: "4px", border: "1px solid #ccc" }}
+        >
+          {nationalities.map((n) => (
+            <option key={n} value={n}>{n}</option>
+          ))}
+        </select>
+        {(search || nationality !== "All") && (
+          <button onClick={clear} style={{ padding: "0.5rem 1rem", background: "none", border: "1px solid #ccc", borderRadius: "4px", cursor: "pointer" }}>
+            Clear
+          </button>
+        )}
+        <span style={{ fontSize: "0.85rem", color: "#888" }}>
+          {displayed.length} result{displayed.length !== 1 ? "s" : ""}
+        </span>
+      </div>
+
+      {error && <p style={{ color: "red" }}>{error}</p>}
+      {loading && <p>Loading...</p>}
+      {!loading && displayed.length === 0 && <p style={{ color: "#888" }}>No directors found.</p>}
+
+      <ul style={{ listStyle: "none", padding: 0, display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+        {displayed.map((director) => (
+          <li
+            key={director.NodeID}
+            style={{ padding: "0.75rem 1rem", border: "1px solid #ddd", borderRadius: "6px", display: "flex", justifyContent: "space-between", alignItems: "center" }}
+          >
+            <strong>{director.Name}</strong>
+            <div style={{ fontSize: "0.85rem", color: "#666", display: "flex", gap: "1rem" }}>
+              {director.Nationality && <span>{director.Nationality}</span>}
+              {director.Awards && <span>🏆 {director.Awards}</span>}
+              {director.DateOfBirth && <span>{director.DateOfBirth.slice(0, 4)}</span>}
+            </div>
           </li>
         ))}
-      </ul> */}
-    </>
+      </ul>
+    </div>
   );
 }

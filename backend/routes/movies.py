@@ -127,3 +127,30 @@ def delete_movie(node_id):
         return jsonify({"message": "Movie deleted"}), 200
     finally:
         conn.close()
+
+@movies_bp.get("/name/<string:title>")
+@swag_from(MOVIES["get_movie_by_title"])
+def get_movie_by_title(title):
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute("SELECT * FROM Movie WHERE Movie.Title LIKE %s", (f"%{title}%",))
+            movie = cursor.fetchone()
+        if movie:
+            return jsonify(movie)
+        else:
+            return jsonify({"message": "Movie not found"}), 404
+    finally:
+        conn.close()
+
+@movies_bp.get("/genre/<string:genre>")
+@swag_from(MOVIES["get_movies_by_genre"])
+def get_movies_by_genre(genre):
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute("SELECT * FROM Movie WHERE Movie.Genre LIKE %s", (f"%{genre}%",))
+            movies = cursor.fetchall()
+        return jsonify(movies)
+    finally:
+        conn.close()

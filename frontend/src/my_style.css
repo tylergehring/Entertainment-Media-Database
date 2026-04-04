@@ -7,10 +7,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500&display=swap');
 
 #root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
+  width: 100%;
 }
 
 .logo {
@@ -37,6 +34,15 @@
 
 
 /*  temperary styling for the home page, will be removed/changed later */
+
+/* ── Page content area ── */
+.emdb-home > main {
+  padding-top: 60px; /* clears the fixed header */
+  padding-left: 3rem;
+  padding-right: 3rem;
+  width: 100%;
+  box-sizing: border-box;
+}
 
 /* ── Base ── */
 .emdb-home {

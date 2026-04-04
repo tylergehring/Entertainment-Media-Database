@@ -224,6 +224,44 @@ ACTORS = {
             404: {"description": "Actor not found"},
         },
     },
+    "get_actors_by_name": {
+        "tags": ["Actors"],
+        "summary": "Search actors by name (partial match)",
+        "parameters": [
+            {
+                "name": "name",
+                "in": "path",
+                "type": "string",
+                "required": True,
+                "description": "Partial or full name to search for",
+            }
+        ],
+        "responses": {
+            200: {
+                "description": "List of matching actors",
+                "schema": {"type": "array", "items": {"$ref": "#/definitions/Actor"}},
+            }
+        },
+    },
+    "get_actors_by_nationality": {
+        "tags": ["Actors"],
+        "summary": "Get actors by nationality (partial match)",
+        "parameters": [
+            {
+                "name": "nationality",
+                "in": "path",
+                "type": "string",
+                "required": True,
+                "description": "Nationality to filter by",
+            }
+        ],
+        "responses": {
+            200: {
+                "description": "List of matching actors",
+                "schema": {"type": "array", "items": {"$ref": "#/definitions/Actor"}},
+            }
+        },
+    },
 }
 
 # ---------------------------------------------------------------------------
@@ -364,6 +402,45 @@ MOVIES = {
         "responses": {
             200: {"description": "Movie deleted"},
             404: {"description": "Movie not found"},
+        },
+    },
+    "get_movie_by_title": {
+        "tags": ["Movies"],
+        "summary": "Search movies by title (partial match)",
+        "parameters": [
+            {
+                "name": "title",
+                "in": "path",
+                "type": "string",
+                "required": True,
+                "description": "Partial or full title to search for",
+            }
+        ],
+        "responses": {
+            200: {
+                "description": "Matching movie",
+                "schema": {"$ref": "#/definitions/Movie"},
+            },
+            404: {"description": "Movie not found"},
+        },
+    },
+    "get_movies_by_genre": {
+        "tags": ["Movies"],
+        "summary": "Get movies by genre (partial match)",
+        "parameters": [
+            {
+                "name": "genre",
+                "in": "path",
+                "type": "string",
+                "required": True,
+                "description": "Genre to filter by",
+            }
+        ],
+        "responses": {
+            200: {
+                "description": "List of matching movies",
+                "schema": {"type": "array", "items": {"$ref": "#/definitions/Movie"}},
+            }
         },
     },
 }
@@ -507,6 +584,44 @@ DIRECTORS = {
         "responses": {
             200: {"description": "Director deleted"},
             404: {"description": "Director not found"},
+        },
+    },
+    "get_directors_by_name": {
+        "tags": ["Directors"],
+        "summary": "Search directors by name (partial match)",
+        "parameters": [
+            {
+                "name": "name",
+                "in": "path",
+                "type": "string",
+                "required": True,
+                "description": "Partial or full name to search for",
+            }
+        ],
+        "responses": {
+            200: {
+                "description": "List of matching directors",
+                "schema": {"type": "array", "items": {"$ref": "#/definitions/Director"}},
+            }
+        },
+    },
+    "get_directors_by_nationality": {
+        "tags": ["Directors"],
+        "summary": "Get directors by nationality (partial match)",
+        "parameters": [
+            {
+                "name": "nationality",
+                "in": "path",
+                "type": "string",
+                "required": True,
+                "description": "Nationality to filter by",
+            }
+        ],
+        "responses": {
+            200: {
+                "description": "List of matching directors",
+                "schema": {"type": "array", "items": {"$ref": "#/definitions/Director"}},
+            }
         },
     },
 }
