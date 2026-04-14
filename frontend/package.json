@@ -3,16 +3,16 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-"scripts": {
-  "dev": "vite --host 0.0.0.0",
-  "build": "vite build",
-  "preview": "vite preview"
-},
+  "scripts": {
+    "dev": "vite --host 0.0.0.0",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
   "dependencies": {
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
-    "vis-network": "^9.1.9",
-    "vis-data": "^7.1.9"
+    "vis-data": "^7.1.10",
+    "vis-network": "^9.1.13"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
