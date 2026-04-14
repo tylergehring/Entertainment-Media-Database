@@ -26,7 +26,7 @@ def search_directors():
     conn = get_db_connection()
     try:
         with conn.cursor() as cursor:
-            cursor.execute("SELECT * FROM Director WHERE Director.Name = %s", (name,))
+            cursor.execute("SELECT * FROM Director WHERE Director.Name LIKE %s", (f"%{name}%",))
             directors = cursor.fetchall()
         return jsonify(directors)
     finally:

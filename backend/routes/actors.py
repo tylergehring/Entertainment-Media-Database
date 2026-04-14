@@ -26,7 +26,7 @@ def search_actors():
     conn = get_db_connection()
     try:
         with conn.cursor() as cursor:
-            cursor.execute("SELECT * FROM Actor WHERE Actor.name = %s", (name,))
+            cursor.execute("SELECT * FROM Actor WHERE Actor.Name LIKE %s", (f"%{name}%",))
             actors = cursor.fetchall()
         return jsonify(actors)
     finally:

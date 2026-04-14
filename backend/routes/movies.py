@@ -26,7 +26,7 @@ def search_movies():
     conn = get_db_connection()
     try:
         with conn.cursor() as cursor:
-            cursor.execute("SELECT * FROM Movie WHERE Movie.Title = %s", (title,))
+            cursor.execute("SELECT * FROM Movie WHERE Movie.Title LIKE %s", (f"%{title}%",))
             movies = cursor.fetchall()
         return jsonify(movies)
     finally:

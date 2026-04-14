@@ -302,6 +302,49 @@
   margin: 0;
 }
 
+/* ── Person Card (actors / directors) ── */
+.person-card {
+  border-radius: 6px;
+  overflow: hidden;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.07);
+  cursor: pointer;
+  transition: transform .2s, border-color .2s, box-shadow .2s;
+  animation: fadeUp .5s ease both;
+}
+
+.person-card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(226,176,74,0.3);
+  box-shadow: 0 12px 32px rgba(0,0,0,0.4);
+}
+
+.person-avatar {
+  height: 160px;
+  background:
+    linear-gradient(160deg, rgba(255,255,255,0.04) 0%, rgba(0,0,0,0.3) 100%),
+    #141416;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.person-avatar::after {
+  content: "";
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: rgba(226,176,74,0.15);
+  border: 2px solid rgba(226,176,74,0.25);
+}
+
+/* ── Search status message ── */
+.search-status {
+  color: #666;
+  font-size: 1rem;
+  padding: 2rem 0;
+}
+
 /* -- ammendments, organize later -- */
 
 
