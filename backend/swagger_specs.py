@@ -1035,3 +1035,62 @@ GRAPHS = {
         },
     },
 }
+
+# ---------------------------------------------------------------------------
+# Prestige Network
+# ---------------------------------------------------------------------------
+
+PRESTIGE_NETWORK = {
+    "get_prestige_network": {
+        "tags": ["Prestige Network"],
+        "summary": "Get the prestige actor network",
+        "description": (
+            "Finds all movies considered prestigious (IMDB rating >= 8.5 or directed "
+            "by a director who has received an award). Returns the full set of "
+            "prestigious movies, all actors who appeared in those movies, and "
+            "co-starring edges between those actors weighted by the number of "
+            "shared prestigious movies."
+        ),
+        "responses": {
+            200: {
+                "description": "Prestige network",
+                "schema": {
+                    "type": "object",
+                    "properties": {
+                        "prestigiousMovies": {
+                            "type": "array",
+                            "items": {"$ref": "#/definitions/Movie"},
+                            "description": "Movies with a rating >= 8.5 or directed by an awarded director",
+                        },
+                        "prestigiousActors": {
+                            "type": "array",
+                            "items": {"$ref": "#/definitions/Actor"},
+                            "description": "Actors who appeared in at least one prestigious movie",
+                        },
+                        "edges": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "source": {
+                                        "type": "integer",
+                                        "description": "NodeID of the first actor",
+                                    },
+                                    "target": {
+                                        "type": "integer",
+                                        "description": "NodeID of the second actor",
+                                    },
+                                    "weight": {
+                                        "type": "integer",
+                                        "description": "Number of shared prestigious movies",
+                                    },
+                                },
+                            },
+                            "description": "Co-starring edges between prestigious actors",
+                        },
+                    },
+                },
+            },
+        },
+    },
+}
