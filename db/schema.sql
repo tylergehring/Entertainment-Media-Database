@@ -54,6 +54,7 @@ CREATE TABLE IF NOT EXISTS Graphs (
     GraphID     INT AUTO_INCREMENT PRIMARY KEY,
     Name        VARCHAR(255) NOT NULL,
     Description VARCHAR(500),
+    GraphType   ENUM('CoStar', 'StarPower', 'Prestige') NOT NULL DEFAULT 'StarPower',
     CreatedAt   DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 

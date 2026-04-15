@@ -9,6 +9,7 @@ from routes.directors import directors_bp
 from routes.edges import edges_bp
 from routes.graphs import graphs_bp
 from routes.co_star import costar_bp
+from routes.star_power import star_power_bp
 from swagger_specs import DEFINITIONS
 
 app = Flask(__name__)
@@ -32,6 +33,7 @@ app.register_blueprint(directors_bp)
 app.register_blueprint(edges_bp)
 app.register_blueprint(graphs_bp)
 app.register_blueprint(costar_bp)
+app.register_blueprint(star_power_bp)
 
 
 @app.route("/api/health")

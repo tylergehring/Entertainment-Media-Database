@@ -1035,3 +1035,52 @@ GRAPHS = {
         },
     },
 }
+
+# ---------------------------------------------------------------------------
+# Star Power query blueprint specs  (/api/star-power/*)
+# ---------------------------------------------------------------------------
+
+STAR_POWER = {
+    "get_all": {
+        "tags": ["Star Power"],
+        "summary": "Get all actors whose Star Power Index meets the threshold",
+        "parameters": [
+            {
+                "name": "threshold",
+                "in": "query",
+                "type": "integer",
+                "required": True,
+                "description": "Minimum SPI value (1–10)",
+            }
+        ],
+        "responses": {
+            200: {"description": "Star power data for all qualifying actors"},
+            400: {"description": "Invalid threshold"},
+        },
+    },
+    "get_actor": {
+        "tags": ["Star Power"],
+        "summary": "Get Star Power Index data for a single actor",
+        "parameters": [
+            {
+                "name": "actor_id",
+                "in": "query",
+                "type": "string",
+                "required": True,
+                "description": "ActorID of the actor",
+            },
+            {
+                "name": "threshold",
+                "in": "query",
+                "type": "integer",
+                "required": False,
+                "description": "Minimum SPI value to qualify (default 1)",
+            },
+        ],
+        "responses": {
+            200: {"description": "Star power data for the requested actor"},
+            400: {"description": "Missing or invalid parameters"},
+            404: {"description": "Actor not found"},
+        },
+    },
+}

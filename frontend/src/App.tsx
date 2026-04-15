@@ -5,6 +5,7 @@ import Movies from "./UserPages/movies.tsx";
 import Actors from "./UserPages/actors.tsx";
 import Directors from "./UserPages/directors.tsx";
 import Co_Star from "./TechnicalPages/Co_Star.tsx";
+import StarPower from "./TechnicalPages/StarPower.tsx";
 import "./my_style.css";
 //import "./App.css";
 
@@ -19,7 +20,7 @@ import "./my_style.css";
 // }
 
 // navgation states
-const navLinks = ["home", "movies", "actors", "directors", "co-stars"];
+const navLinks = ["home", "movies", "actors", "directors", "co-stars", "star-power"];
 
 // note to self add legal page navigation in the future
 
@@ -32,6 +33,7 @@ export default function App() {
     if (page === "actors") return <Actors />;
     if (page === "directors") return <Directors />;
     if (page === "co-stars") return <Co_Star />;
+    if (page === "star-power") return <StarPower />;
   };
 
   return (

@@ -28,12 +28,39 @@ interface ContextMenu {
   nodeId: number | null;
 }
 
+interface StarPowerMovie {
+  NodeID: number;
+  Title: string;
+  Rating: string;
+  actorNodeIds: number[];
+}
+interface StarPowerDirector {
+  NodeID: number;
+  Name: string;
+  movieNodeIds: number[];
+}
+interface StarPowerEdge {
+  edgeId: number;
+  source: number;
+  target: number;
+  type: "ACTED_IN" | "DIRECTED";
+}
+interface StarPowerResponse {
+  threshold: number;
+  qualifies: boolean;
+  actors: { NodeID: number; ActorID: string; Name: string; StarPowerIndex: number }[];
+  movies: StarPowerMovie[];
+  directors: StarPowerDirector[];
+  edges: StarPowerEdge[];
+}
+
 export default function Co_Star() {
   const [actorName, setActorName] = useState("");
   const [suggestions, setSuggestions] = useState<Actor[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [threshold, setThreshold] = useState(5);
   const [contextMenu, setContextMenu] = useState<ContextMenu>({
     visible: false, x: 0, y: 0, nodeId: null,
   });
@@ -43,7 +70,8 @@ export default function Co_Star() {
   const nodesRef = useRef(new DataSet<any>());
   const edgesRef = useRef(new DataSet<any>());
   const actorMapRef = useRef(new Map<number, string>()); // NodeID -> ActorID
-  const expandedRef = useRef(new Set<number>());         // NodeIDs already expanded
+  const expandedRef = useRef(new Set<number>());         // NodeIDs already expanded (co-star)
+  const spExpandedRef = useRef(new Set<number>());       // NodeIDs already star-power expanded
 
   const mergeData = (data: CoStarResponse, isInitial: boolean) => {
     const { center, coStars, edges } = data;
@@ -207,6 +235,84 @@ export default function Co_Star() {
     if (id) fetchCoStar(id, false);
   };
 
+  const fetchStarPower = (actorId: string, actorNodeId: number) => {
+    setLoading(true);
+    setError("");
+    fetch(`/api/star-power/?actor_id=${encodeURIComponent(actorId)}&threshold=${threshold}`)
+      .then((res) => {
+        if (!res.ok) throw new Error("Star power request failed");
+        return res.json() as Promise<StarPowerResponse>;
+      })
+      .then((data) => {
+        const spi = data.actors[0]?.StarPowerIndex ?? 0;
+
+        // Update actor node label with SPI
+        const existing = nodesRef.current.get(actorNodeId) as any;
+        if (existing) {
+          nodesRef.current.update({
+            id: actorNodeId,
+            label: `${existing.label.split(" (SPI")[0]} (SPI: ${spi})`,
+          });
+        }
+
+        // Add movie nodes (purple)
+        data.movies.forEach((m) => {
+          if (!nodesRef.current.get(`m-${m.NodeID}`)) {
+            nodesRef.current.add({
+              id: `m-${m.NodeID}`,
+              label: `${m.Title}\n⭐ ${m.Rating}`,
+              color: "#9b59b6",
+              font: { color: "#fff" },
+              size: 16,
+              shape: "dot",
+            });
+          }
+        });
+
+        // Add director nodes (orange)
+        data.directors.forEach((d) => {
+          if (!nodesRef.current.get(`d-${d.NodeID}`)) {
+            nodesRef.current.add({
+              id: `d-${d.NodeID}`,
+              label: d.Name,
+              color: "#e67e22",
+              font: { color: "#fff" },
+              size: 14,
+              shape: "dot",
+            });
+          }
+        });
+
+        // Add edges
+        data.edges.forEach((e) => {
+          const from = e.type === "ACTED_IN" ? actorNodeId : `d-${e.source}`;
+          const to = `m-${e.target}`;
+          const edgeId = `sp-${e.edgeId}`;
+          if (!edgesRef.current.get(edgeId)) {
+            edgesRef.current.add({
+              id: edgeId,
+              from,
+              to,
+              dashes: e.type === "DIRECTED",
+              color: { color: e.type === "ACTED_IN" ? "#9b59b6" : "#e67e22" },
+            });
+          }
+        });
+
+        spExpandedRef.current.add(actorNodeId);
+      })
+      .catch((err) => setError(err.message))
+      .finally(() => setLoading(false));
+  };
+
+  const handleGetStarPower = () => {
+    const { nodeId } = contextMenu;
+    setContextMenu({ visible: false, x: 0, y: 0, nodeId: null });
+    if (nodeId == null || spExpandedRef.current.has(nodeId)) return;
+    const actorId = actorMapRef.current.get(nodeId);
+    if (actorId) fetchStarPower(actorId, nodeId);
+  };
+
   // Dismiss context menu on any outside click
   useEffect(() => {
     const dismiss = () => setContextMenu({ visible: false, x: 0, y: 0, nodeId: null });
@@ -227,7 +333,7 @@ export default function Co_Star() {
     <div>
       <h1>Co-Star Network</h1>
 
-      <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1rem", alignItems: "flex-start" }}>
+      <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1rem", alignItems: "flex-start", flexWrap: "wrap" }}>
         <div style={{ position: "relative" }}>
           <input
             type="text"
@@ -288,6 +394,17 @@ export default function Co_Star() {
         >
           {loading ? "Loading..." : "Generate"}
         </button>
+        <label style={{ display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.9rem", color: "#ccc" }}>
+          SPI threshold:
+          <input
+            type="number"
+            min={1}
+            max={10}
+            value={threshold}
+            onChange={(e) => setThreshold(Math.max(1, Math.min(10, Number(e.target.value))))}
+            style={{ width: "52px", padding: "0.5rem 0.3rem", borderRadius: "4px", border: "1px solid #ccc", textAlign: "center" }}
+          />
+        </label>
       </div>
 
       {error && <p style={{ color: "red" }}>{error}</p>}
@@ -335,14 +452,46 @@ export default function Co_Star() {
             >
               {alreadyExpanded ? "Already expanded" : "Expand co-stars"}
             </button>
+            <button
+              onClick={handleGetStarPower}
+              disabled={
+                contextMenu.nodeId == null ||
+                spExpandedRef.current.has(contextMenu.nodeId) ||
+                loading
+              }
+              style={{
+                display: "block",
+                width: "100%",
+                padding: "10px 12px",
+                border: "none",
+                borderTop: "1px solid #eee",
+                background: "none",
+                textAlign: "left",
+                cursor:
+                  contextMenu.nodeId != null && spExpandedRef.current.has(contextMenu.nodeId)
+                    ? "default"
+                    : "pointer",
+                color:
+                  contextMenu.nodeId != null && spExpandedRef.current.has(contextMenu.nodeId)
+                    ? "#aaa"
+                    : "#333",
+                fontSize: "0.9rem",
+              }}
+            >
+              {contextMenu.nodeId != null && spExpandedRef.current.has(contextMenu.nodeId)
+                ? "Star power shown"
+                : `Get Star Power (≥${threshold})`}
+            </button>
           </div>
         )}
       </div>
 
-      <div style={{ marginTop: "0.75rem", fontSize: "0.85rem", color: "#888", display: "flex", gap: "1.5rem" }}>
+      <div style={{ marginTop: "0.75rem", fontSize: "0.85rem", color: "#888", display: "flex", gap: "1.5rem", flexWrap: "wrap" }}>
         <span><span style={{ color: "#e8a838" }}>●</span> Starting actor</span>
         <span><span style={{ color: "#27ae60" }}>●</span> Expanded</span>
         <span><span style={{ color: "#4a90d9" }}>●</span> Co-star (right-click to expand)</span>
+        <span><span style={{ color: "#9b59b6" }}>●</span> Movie (star power)</span>
+        <span><span style={{ color: "#e67e22" }}>●</span> Director (star power)</span>
       </div>
     </div>
   );
