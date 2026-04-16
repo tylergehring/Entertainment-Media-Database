@@ -96,6 +96,7 @@ export default function Co_Star() {
   const [loading, setLoading]       = useState(false);
   const [error, setError]           = useState("");
   const [selected, setSelected]     = useState<SelectedNode | null>(null);
+  const [graphHeight, setGraphHeight] = useState(560);
 
   // Track which nodes have had each action applied
   const [expandedSet, setExpandedSet]         = useState(new Set<number>());
@@ -378,6 +379,16 @@ export default function Co_Star() {
 
   useEffect(() => () => { networkRef.current?.destroy(); }, []);
 
+  const handleResizeStart = (e: React.MouseEvent) => {
+    e.preventDefault();
+    const startY = e.clientY;
+    const startH = graphHeight;
+    const onMove = (ev: MouseEvent) => setGraphHeight(Math.max(300, startH + ev.clientY - startY));
+    const onUp   = () => { document.removeEventListener("mousemove", onMove); document.removeEventListener("mouseup", onUp); };
+    document.addEventListener("mousemove", onMove);
+    document.addEventListener("mouseup", onUp);
+  };
+
   // ---------------------------------------------------------------------------
   // Render
   // ---------------------------------------------------------------------------
@@ -431,8 +442,17 @@ export default function Co_Star() {
       {/* Graph canvas */}
       <div
         ref={containerRef}
-        style={{ width: "100%", height: "560px", border: "1px solid #ddd", borderRadius: "8px", background: "#000" }}
+        style={{ width: "100%", height: `${graphHeight}px`, border: "1px solid #ddd", borderRadius: "8px 8px 0 0", background: "#000" }}
       />
+      <div
+        onMouseDown={handleResizeStart}
+        title="Drag to resize"
+        style={{ height: "8px", background: "rgba(255,255,255,0.07)", borderRadius: "0 0 8px 8px", border: "1px solid #ddd", borderTop: "none", cursor: "ns-resize", display: "flex", alignItems: "center", justifyContent: "center" }}
+        onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.18)")}
+        onMouseLeave={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.07)")}
+      >
+        <div style={{ width: "32px", height: "2px", borderRadius: "2px", background: "rgba(255,255,255,0.3)" }} />
+      </div>
 
       {/* Action panel */}
       {sel ? (
