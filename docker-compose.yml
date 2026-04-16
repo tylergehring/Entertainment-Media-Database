@@ -13,6 +13,8 @@ services:
       - db_data:/var/lib/mysql
       - ./db/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
       - ./db/seed.sql:/docker-entrypoint-initdb.d/02-seed.sql
+      - ./db/seed_extended.sql:/docker-entrypoint-initdb.d/03-seed-extended.sql
+      - ./db/images.sql:/docker-entrypoint-initdb.d/04-images.sql
 
   backend:
     build: ./backend

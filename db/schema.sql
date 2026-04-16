@@ -14,6 +14,7 @@ CREATE TABLE IF NOT EXISTS Movie (
     ReleaseDate DATE,
     Genre       VARCHAR(100),
     Runtime     INT,
+    PosterURL   VARCHAR(500),
     PRIMARY KEY (NodeID),
     FOREIGN KEY (NodeID) REFERENCES Nodes(NodeID) ON DELETE CASCADE
 );
@@ -24,6 +25,7 @@ CREATE TABLE IF NOT EXISTS Actor (
     Name        VARCHAR(255) NOT NULL,
     DateOfBirth DATE,
     Nationality VARCHAR(100),
+    PhotoURL    VARCHAR(500),
     PRIMARY KEY (NodeID),
     FOREIGN KEY (NodeID) REFERENCES Nodes(NodeID) ON DELETE CASCADE
 );
@@ -35,6 +37,7 @@ CREATE TABLE IF NOT EXISTS Director (
     DateOfBirth DATE,
     Nationality VARCHAR(100),
     Awards      VARCHAR(255),
+    PhotoURL    VARCHAR(500),
     PRIMARY KEY (NodeID),
     FOREIGN KEY (NodeID) REFERENCES Nodes(NodeID) ON DELETE CASCADE
 );

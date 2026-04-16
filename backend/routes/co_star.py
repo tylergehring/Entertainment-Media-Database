@@ -41,6 +41,7 @@ def get_costar_network():
                     a2.Name,
                     a2.DateOfBirth,
                     a2.Nationality,
+                    a2.PhotoURL,
                     COUNT(DISTINCT e1.TargetNodeID) AS sharedMovies
                 FROM Edges e1
                 JOIN Edges e2
@@ -51,7 +52,7 @@ def get_costar_network():
                     ON  a2.NodeID = e2.SourceNodeID
                 WHERE e1.SourceNodeID = %s
                   AND e1.EdgeType     = 'ACTED_IN'
-                GROUP BY a2.NodeID, a2.ActorID, a2.Name, a2.DateOfBirth, a2.Nationality
+                GROUP BY a2.NodeID, a2.ActorID, a2.Name, a2.DateOfBirth, a2.Nationality, a2.PhotoURL
                 ORDER BY sharedMovies DESC
                 """,
                 (center_node_id, center_node_id),

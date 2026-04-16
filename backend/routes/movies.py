@@ -26,7 +26,7 @@ def search_movies():
     conn = get_db_connection()
     try:
         with conn.cursor() as cursor:
-            cursor.execute("SELECT * FROM Movie WHERE Movie.Title = %s", (title,))
+            cursor.execute("SELECT * FROM Movie WHERE Movie.Title LIKE %s", (f"%{title}%",))
             movies = cursor.fetchall()
         return jsonify(movies)
     finally:
@@ -142,6 +142,27 @@ def get_movie_by_title(title):
             return jsonify({"message": "Movie not found"}), 404
     finally:
         conn.close()
+
+@movies_bp.get("/<int:node_id>/cast")
+def movie_cast(node_id):
+    """Return all actors who appeared in a given movie."""
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT a.NodeID, a.ActorID, a.Name, a.Nationality, a.PhotoURL
+                FROM Actor a
+                JOIN Edges e ON e.SourceNodeID = a.NodeID AND e.EdgeType = 'ACTED_IN'
+                WHERE e.TargetNodeID = %s
+                """,
+                (node_id,),
+            )
+            actors = cursor.fetchall()
+        return jsonify(actors)
+    finally:
+        conn.close()
+
 
 @movies_bp.get("/genre/<string:genre>")
 @swag_from(MOVIES["get_movies_by_genre"])

@@ -8,15 +8,32 @@ interface Actor {
   Name: string;
   DateOfBirth: string;
   Nationality: string;
+  PhotoURL: string | null;
+}
+
+function SkeletonGrid() {
+  return (
+    <div className="cards-grid">
+      {Array.from({ length: 8 }).map((_, i) => (
+        <div className="skeleton-card" key={i} style={{ animationDelay: `${i * 80}ms` }}>
+          <div className="skeleton-avatar" />
+          <div className="skeleton-info">
+            <div className="skeleton-line" />
+            <div className="skeleton-line short" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
 }
 
 export default function Actors() {
-  const [allActors, setAllActors] = useState<Actor[]>([]);
-  const [results, setResults] = useState<Actor[] | null>(null);
-  const [search, setSearch] = useState("");
+  const [allActors, setAllActors]   = useState<Actor[]>([]);
+  const [results, setResults]       = useState<Actor[] | null>(null);
+  const [search, setSearch]         = useState("");
   const [nationality, setNationality] = useState("All");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [loading, setLoading]       = useState(false);
+  const [error, setError]           = useState("");
 
   useEffect(() => {
     setLoading(true);
@@ -38,10 +55,7 @@ export default function Actors() {
     setError("");
     setNationality("All");
     fetch(`/api/actors/name/${encodeURIComponent(search.trim())}`)
-      .then((res) => {
-        if (!res.ok) throw new Error("Request failed");
-        return res.json();
-      })
+      .then((res) => { if (!res.ok) throw new Error("Request failed"); return res.json(); })
       .then((data) => setResults(Array.isArray(data) ? data : [data]))
       .catch(() => setError("Search failed"))
       .finally(() => setLoading(false));
@@ -51,83 +65,92 @@ export default function Actors() {
     setNationality(selected);
     setSearch("");
     setError("");
-    if (selected === "All") {
-      setResults(null);
-      return;
-    }
+    if (selected === "All") { setResults(null); return; }
     setLoading(true);
     fetch(`/api/actors/nationality/${encodeURIComponent(selected)}`)
-      .then((res) => {
-        if (!res.ok) throw new Error("Request failed");
-        return res.json();
-      })
+      .then((res) => { if (!res.ok) throw new Error("Request failed"); return res.json(); })
       .then((data) => setResults(data))
       .catch(() => setError("Failed to filter by nationality"))
       .finally(() => setLoading(false));
   };
 
-  const clear = () => {
-    setSearch("");
-    setNationality("All");
-    setResults(null);
-    setError("");
-  };
+  const clear = () => { setSearch(""); setNationality("All"); setResults(null); setError(""); };
 
   const displayed = results ?? allActors;
 
   return (
     <div>
-      <h1>Actors</h1>
+      {/* Page header */}
+      <div className="page-hero">
+        <p className="page-eyebrow">Browse the database</p>
+        <h1 className="page-title">Actors</h1>
+        <p className="page-subtitle">Discover the talent behind the screen</p>
+      </div>
 
-      <div style={{ display: "flex", gap: "0.75rem", marginBottom: "1.5rem", flexWrap: "wrap", alignItems: "center" }}>
-        <input
-          type="text"
-          placeholder="Search by name..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-          style={{ padding: "0.5rem", width: "280px", borderRadius: "4px", border: "1px solid #ccc" }}
-        />
-        <button onClick={handleSearch} disabled={loading || !search.trim()} style={{ padding: "0.5rem 1rem" }}>
-          Search
-        </button>
-        <select
-          value={nationality}
-          onChange={(e) => handleNationalityChange(e.target.value)}
-          style={{ padding: "0.5rem", borderRadius: "4px", border: "1px solid #ccc" }}
-        >
-          {nationalities.map((n) => (
-            <option key={n} value={n}>{n}</option>
-          ))}
-        </select>
-        {(search || nationality !== "All") && (
-          <button onClick={clear} style={{ padding: "0.5rem 1rem", background: "none", border: "1px solid #ccc", borderRadius: "4px", cursor: "pointer" }}>
-            Clear
+      {/* Filter bar */}
+      <div className="filter-bar">
+        <div className="search-bar" style={{ maxWidth: 400 }}>
+          <svg className="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <circle cx="11" cy="11" r="8" />
+            <path d="m21 21-4.35-4.35" />
+          </svg>
+          <input
+            className="search-input"
+            type="text"
+            placeholder="Search by name..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+          />
+          <button className="search-btn" onClick={handleSearch} disabled={loading || !search.trim()}>
+            Search
           </button>
+        </div>
+
+        <select className="filter-select" value={nationality} onChange={(e) => handleNationalityChange(e.target.value)}>
+          {nationalities.map((n) => <option key={n} value={n}>{n}</option>)}
+        </select>
+
+        {(search || nationality !== "All") && (
+          <button className="clear-btn" onClick={clear}>Clear</button>
         )}
-        <span style={{ fontSize: "0.85rem", color: "#888" }}>
-          {displayed.length} result{displayed.length !== 1 ? "s" : ""}
+
+        <span className="filter-count">
+          {!loading && `${displayed.length} result${displayed.length !== 1 ? "s" : ""}`}
         </span>
       </div>
 
-      {error && <p style={{ color: "red" }}>{error}</p>}
-      {loading && <p>Loading...</p>}
-      {!loading && displayed.length === 0 && <p style={{ color: "#888" }}>No actors found.</p>}
+      {error && <p className="page-error">{error}</p>}
 
-      <ul style={{ listStyle: "none", padding: 0, display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-        {displayed.map((actor) => (
-          <li
-            key={actor.NodeID}
-            style={{ padding: "0.75rem 1rem", border: "1px solid #ddd", borderRadius: "6px", display: "flex", justifyContent: "space-between", alignItems: "center" }}
-          >
-            <strong>{actor.Name}</strong>
-            <div style={{ fontSize: "0.85rem", color: "#666", display: "flex", gap: "1rem" }}>
-              {actor.Nationality && <span>{actor.Nationality}</span>}
-              {actor.DateOfBirth && <span>{actor.DateOfBirth.slice(0, 4)}</span>}
+      {loading ? (
+        <SkeletonGrid />
+      ) : displayed.length === 0 ? (
+        <p className="search-status">No actors found.</p>
+      ) : (
+        <div className="cards-grid">
+          {displayed.map((actor, i) => (
+            <div
+              className="person-card"
+              key={actor.NodeID}
+              style={{ animationDelay: `${Math.min(i, 12) * 50}ms` }}
+            >
+              <div className="person-avatar">
+                {actor.PhotoURL && (
+                  <img className="person-photo" src={actor.PhotoURL} alt={actor.Name} loading="lazy" />
+                )}
+              </div>
+              <div className="card-info">
+                <h3 className="card-title">{actor.Name}</h3>
+                <p className="card-nationality">
+                  {actor.Nationality || ""}
+                  {actor.Nationality && actor.DateOfBirth ? " · " : ""}
+                  {actor.DateOfBirth ? new Date(actor.DateOfBirth).getFullYear() : ""}
+                </p>
+              </div>
             </div>
-          </li>
-        ))}
-      </ul>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

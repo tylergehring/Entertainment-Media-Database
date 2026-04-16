@@ -16,6 +16,7 @@ WITH ActorMovies AS (
         a.NodeID                            AS ActorNodeID,
         a.ActorID,
         a.Name                              AS ActorName,
+        a.PhotoURL                          AS ActorPhotoURL,
         m.NodeID                            AS MovieNodeID,
         m.Title,
         CAST(m.Rating AS DECIMAL(4, 1))     AS NumericRating,
@@ -59,10 +60,11 @@ ORDER BY qa.StarPowerIndex DESC, cm.NumericRating DESC
 
 _DIRECTOR_SQL = """
 SELECT
-    d.NodeID   AS DirectorNodeID,
-    d.Name     AS DirectorName,
+    d.NodeID       AS DirectorNodeID,
+    d.Name         AS DirectorName,
+    d.PhotoURL     AS DirectorPhotoURL,
     e.TargetNodeID AS MovieNodeID,
-    e.EdgeID   AS DirectedEdgeID
+    e.EdgeID       AS DirectedEdgeID
 FROM Edges e
 JOIN Director d ON d.NodeID = e.SourceNodeID
 WHERE e.EdgeType = 'DIRECTED'
@@ -86,6 +88,7 @@ def _build_response(rows, director_rows, threshold):
                 "ActorID": r["ActorID"],
                 "Name": r["ActorName"],
                 "StarPowerIndex": r["StarPowerIndex"],
+                "PhotoURL": r.get("ActorPhotoURL"),
             }
 
         if mnid not in movies_map:
@@ -114,6 +117,7 @@ def _build_response(rows, director_rows, threshold):
             directors_map[dnid] = {
                 "NodeID": dnid,
                 "Name": dr["DirectorName"],
+                "PhotoURL": dr.get("DirectorPhotoURL"),
                 "movieNodeIds": [],
             }
         if mnid not in directors_map[dnid]["movieNodeIds"]:

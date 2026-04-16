@@ -10,17 +10,33 @@ interface Movie {
   ReleaseDate: string;
   Genre: string;
   Runtime: number;
+  PosterURL: string | null;
+}
+
+function SkeletonGrid() {
+  return (
+    <div className="cards-grid">
+      {Array.from({ length: 8 }).map((_, i) => (
+        <div className="skeleton-card" key={i} style={{ animationDelay: `${i * 80}ms` }}>
+          <div className="skeleton-poster" />
+          <div className="skeleton-info">
+            <div className="skeleton-line" />
+            <div className="skeleton-line short" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
 }
 
 export default function Movies() {
   const [allMovies, setAllMovies] = useState<Movie[]>([]);
-  const [results, setResults] = useState<Movie[] | null>(null);
-  const [search, setSearch] = useState("");
-  const [genre, setGenre] = useState("All");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [results, setResults]     = useState<Movie[] | null>(null);
+  const [search, setSearch]       = useState("");
+  const [genre, setGenre]         = useState("All");
+  const [loading, setLoading]     = useState(false);
+  const [error, setError]         = useState("");
 
-  // Load all movies on mount to populate genre dropdown
   useEffect(() => {
     setLoading(true);
     fetch("/api/movies/")
@@ -44,7 +60,7 @@ export default function Movies() {
       .then((res) => {
         if (res.status === 404) return [];
         if (!res.ok) throw new Error("Request failed");
-        return res.json().then((data: Movie | Movie[]) => Array.isArray(data) ? data : [data]);
+        return res.json().then((data: Movie | Movie[]) => (Array.isArray(data) ? data : [data]));
       })
       .then((data) => setResults(data))
       .catch(() => setError("Search failed"))
@@ -55,87 +71,94 @@ export default function Movies() {
     setGenre(selected);
     setSearch("");
     setError("");
-    if (selected === "All") {
-      setResults(null);
-      return;
-    }
+    if (selected === "All") { setResults(null); return; }
     setLoading(true);
     fetch(`/api/movies/genre/${encodeURIComponent(selected)}`)
-      .then((res) => {
-        if (!res.ok) throw new Error("Request failed");
-        return res.json();
-      })
+      .then((res) => { if (!res.ok) throw new Error("Request failed"); return res.json(); })
       .then((data) => setResults(data))
       .catch(() => setError("Failed to filter by genre"))
       .finally(() => setLoading(false));
   };
 
-  const clear = () => {
-    setSearch("");
-    setGenre("All");
-    setResults(null);
-    setError("");
-  };
+  const clear = () => { setSearch(""); setGenre("All"); setResults(null); setError(""); };
 
   const displayed = results ?? allMovies;
 
   return (
     <div>
-      <h1>Movies</h1>
+      {/* Page header */}
+      <div className="page-hero">
+        <p className="page-eyebrow">Browse the database</p>
+        <h1 className="page-title">Movies</h1>
+        <p className="page-subtitle">Explore our complete film catalogue</p>
+      </div>
 
-      <div style={{ display: "flex", gap: "0.75rem", marginBottom: "1.5rem", flexWrap: "wrap", alignItems: "center" }}>
-        <input
-          type="text"
-          placeholder="Search by title..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-          style={{ padding: "0.5rem", width: "280px", borderRadius: "4px", border: "1px solid #ccc" }}
-        />
-        <button onClick={handleSearch} disabled={loading || !search.trim()} style={{ padding: "0.5rem 1rem" }}>
-          Search
-        </button>
-        <select
-          value={genre}
-          onChange={(e) => handleGenreChange(e.target.value)}
-          style={{ padding: "0.5rem", borderRadius: "4px", border: "1px solid #ccc" }}
-        >
-          {genres.map((g) => (
-            <option key={g} value={g}>{g}</option>
-          ))}
-        </select>
-        {(search || genre !== "All") && (
-          <button onClick={clear} style={{ padding: "0.5rem 1rem", background: "none", border: "1px solid #ccc", borderRadius: "4px", cursor: "pointer" }}>
-            Clear
+      {/* Filter bar */}
+      <div className="filter-bar">
+        <div className="search-bar" style={{ maxWidth: 400 }}>
+          <svg className="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <circle cx="11" cy="11" r="8" />
+            <path d="m21 21-4.35-4.35" />
+          </svg>
+          <input
+            className="search-input"
+            type="text"
+            placeholder="Search by title..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+          />
+          <button className="search-btn" onClick={handleSearch} disabled={loading || !search.trim()}>
+            Search
           </button>
+        </div>
+
+        <select className="filter-select" value={genre} onChange={(e) => handleGenreChange(e.target.value)}>
+          {genres.map((g) => <option key={g} value={g}>{g}</option>)}
+        </select>
+
+        {(search || genre !== "All") && (
+          <button className="clear-btn" onClick={clear}>Clear</button>
         )}
-        <span style={{ fontSize: "0.85rem", color: "#888" }}>
-          {displayed.length} result{displayed.length !== 1 ? "s" : ""}
+
+        <span className="filter-count">
+          {!loading && `${displayed.length} result${displayed.length !== 1 ? "s" : ""}`}
         </span>
       </div>
 
-      {error && <p style={{ color: "red" }}>{error}</p>}
-      {loading && <p>Loading...</p>}
-      {!loading && displayed.length === 0 && <p style={{ color: "#888" }}>No movies found.</p>}
+      {error && <p className="page-error">{error}</p>}
 
-      <ul style={{ listStyle: "none", padding: 0, display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-        {displayed.map((movie) => (
-          <li
-            key={movie.NodeID}
-            style={{ padding: "0.75rem 1rem", border: "1px solid #ddd", borderRadius: "6px", display: "flex", justifyContent: "space-between", alignItems: "center" }}
-          >
-            <div>
-              <strong>{movie.Title}</strong>
-              <span style={{ marginLeft: "0.75rem", fontSize: "0.85rem", color: "#888" }}>{movie.Genre}</span>
+      {loading ? (
+        <SkeletonGrid />
+      ) : displayed.length === 0 ? (
+        <p className="search-status">No movies found.</p>
+      ) : (
+        <div className="cards-grid">
+          {displayed.map((movie, i) => (
+            <div
+              className="movie-card"
+              key={movie.NodeID}
+              style={{ animationDelay: `${Math.min(i, 12) * 50}ms` }}
+            >
+              <div className={`card-poster${movie.PosterURL ? " has-image" : ""}`}>
+                {movie.PosterURL && (
+                  <img className="card-poster-img" src={movie.PosterURL} alt={movie.Title} loading="lazy" />
+                )}
+                <span className="card-genre">{movie.Genre || "—"}</span>
+                {movie.Rating && <div className="card-rating">★ {movie.Rating}</div>}
+              </div>
+              <div className="card-info">
+                <h3 className="card-title">{movie.Title}</h3>
+                <p className="card-year">
+                  {movie.ReleaseDate ? new Date(movie.ReleaseDate).getFullYear() : ""}
+                  {movie.ReleaseDate && movie.Runtime ? " · " : ""}
+                  {movie.Runtime ? `${movie.Runtime} min` : ""}
+                </p>
+              </div>
             </div>
-            <div style={{ fontSize: "0.85rem", color: "#666", display: "flex", gap: "1rem" }}>
-              {movie.Rating && <span>⭐ {movie.Rating}</span>}
-              {movie.Runtime && <span>{movie.Runtime} min</span>}
-              {movie.ReleaseDate && <span>{movie.ReleaseDate.slice(0, 4)}</span>}
-            </div>
-          </li>
-        ))}
-      </ul>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

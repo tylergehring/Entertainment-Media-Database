@@ -7,44 +7,39 @@ import "../my_style.css";
 // Types
 // ---------------------------------------------------------------------------
 
-interface SPActor    { NodeID: number; ActorID: string; Name: string; StarPowerIndex: number; PhotoURL?: string | null; }
-interface SPMovie    { NodeID: number; Title: string; Rating: string; actorNodeIds: number[]; }
-interface SPDirector { NodeID: number; Name: string; PhotoURL?: string | null; movieNodeIds: number[]; }
-interface SPEdge     { edgeId: number; source: number; target: number; type: "ACTED_IN" | "DIRECTED"; }
-interface StarPowerResponse {
-  threshold: number;
-  actors: SPActor[];
-  movies: SPMovie[];
-  directors: SPDirector[];
-  edges: SPEdge[];
+interface PrestigeActor    { NodeID: number; ActorID: string; Name: string; DateOfBirth: string; Nationality: string; PhotoURL?: string | null; }
+interface PrestigeMovie    { NodeID: number; Title: string; Rating: string; Genre: string; }
+interface PrestigeDirector { NodeID: number; DirectorID: string; Name: string; Awards: string; PhotoURL?: string | null; }
+interface PrestigeResponse {
+  prestigiousMovies:    PrestigeMovie[];
+  prestigiousActors:    PrestigeActor[];
+  prestigiousDirectors: PrestigeDirector[];
+  coStarEdges:          { source: number; target: number; weight: number }[];
+  actedInEdges:         { EdgeID: number; actorNodeId: number; movieNodeId: number }[];
+  directedEdges:        { EdgeID: number; directorNodeId: number; movieNodeId: number }[];
 }
-interface SingleSPResponse {
+
+interface StarPowerResponse {
   qualifies: boolean;
-  actors: { NodeID: number; ActorID: string; Name: string; StarPowerIndex: number }[];
-  movies: { NodeID: number; Title: string; Rating: string }[];
-  directors: { NodeID: number; Name: string; PhotoURL?: string | null }[];
-  edges: { edgeId: number; source: number; target: number; type: "ACTED_IN" | "DIRECTED" }[];
+  actors:    { NodeID: number; ActorID: string; Name: string; StarPowerIndex: number }[];
+  movies:    { NodeID: number; Title: string; Rating: string; actorNodeIds: number[] }[];
+  directors: { NodeID: number; Name: string; PhotoURL?: string | null; movieNodeIds: number[] }[];
+  edges:     { edgeId: number; source: number; target: number; type: "ACTED_IN" | "DIRECTED" }[];
 }
 
 interface CoStarActor { NodeID: number; ActorID: string; Name: string; DateOfBirth: string; Nationality: string; PhotoURL?: string | null; sharedMovies: number; }
 interface CoStarResponse {
-  center: CoStarActor;
+  center:  CoStarActor;
   coStars: CoStarActor[];
-  edges: { source: number; target: number; weight: number }[];
+  edges:   { source: number; target: number; weight: number }[];
 }
-interface PrestigeResponse {
-  prestigiousMovies:    { NodeID: number; Title: string; Rating: string; Genre: string }[];
-  prestigiousActors:    { NodeID: number; ActorID: string; Name: string }[];
-  prestigiousDirectors: { NodeID: number; Name: string; Awards: string; PhotoURL?: string | null }[];
-  actedInEdges:  { EdgeID: number; actorNodeId: number; movieNodeId: number }[];
-  directedEdges: { EdgeID: number; directorNodeId: number; movieNodeId: number }[];
-}
+
 interface CastActor {
   NodeID: number; ActorID: string; Name: string; Nationality: string; PhotoURL?: string | null;
 }
 
 type SelectedNode =
-  | { type: "actor"; nodeId: number; label: string }
+  | { type: "actor"; nodeId: number; label: string; isPrestigious: boolean }
   | { type: "movie"; movieNodeId: number; label: string };
 
 // ---------------------------------------------------------------------------
@@ -86,16 +81,23 @@ const actionBtn = (done: boolean, disabled: boolean): React.CSSProperties => ({
 // Component
 // ---------------------------------------------------------------------------
 
-export default function StarPower() {
-  const [threshold, setThreshold]   = useState(5);
-  const [minRating, setMinRating]   = useState(8.5);
-  const [awardDirs, setAwardDirs]   = useState(true);
-  const [genre, setGenre]           = useState("");
-  const [genres, setGenres]         = useState<string[]>([]);
-  const [loading, setLoading]       = useState(false);
-  const [error, setError]           = useState("");
-  const [hasGraph, setHasGraph]     = useState(false);
-  const [selected, setSelected]     = useState<SelectedNode | null>(null);
+export default function PrestigeNetwork() {
+  // Prestige filter controls
+  const [minRating, setMinRating]       = useState(8.5);
+  const [awardDirs, setAwardDirs]       = useState(true);
+  const [minShared, setMinShared]       = useState(1);
+  const [genre, setGenre]               = useState("");
+  const [genres, setGenres]             = useState<string[]>([]);
+
+  // SPI threshold (for Get Star Power action)
+  const [spiThreshold, setSpiThreshold] = useState(5);
+
+  // UI state
+  const [loading, setLoading]   = useState(false);
+  const [error, setError]       = useState("");
+  const [hasGraph, setHasGraph] = useState(false);
+  const [summary, setSummary]   = useState("");
+  const [selected, setSelected] = useState<SelectedNode | null>(null);
 
   // Track which nodes have had each action applied
   const [expandedSet, setExpandedSet]         = useState(new Set<number>());
@@ -103,11 +105,13 @@ export default function StarPower() {
   const [prestigeDoneSet, setPrestigeDoneSet] = useState(new Set<number>());
   const [castDoneSet, setCastDoneSet]         = useState(new Set<number>());
 
-  const containerRef  = useRef<HTMLDivElement>(null);
-  const networkRef    = useRef<Network | null>(null);
-  const nodesRef      = useRef(new DataSet<any>());
-  const edgesRef      = useRef(new DataSet<any>());
-  const actorMapRef   = useRef(new Map<number, string>()); // NodeID -> ActorID
+  // Graph refs
+  const containerRef   = useRef<HTMLDivElement>(null);
+  const networkRef     = useRef<Network | null>(null);
+  const nodesRef       = useRef(new DataSet<any>());
+  const edgesRef       = useRef(new DataSet<any>());
+  const actorMapRef    = useRef(new Map<number, string>()); // NodeID -> ActorID
+  const prestigeSet    = useRef(new Set<number>());         // NodeIDs of original prestigious actors
 
   useEffect(() => {
     fetch("/api/prestige-network/genres")
@@ -130,7 +134,7 @@ export default function StarPower() {
       {
         physics: { solver: "forceAtlas2Based" },
         edges: {
-          scaling: { min: 1, max: 4 },
+          scaling: { min: 1, max: 6 },
           color: { color: "#aaa" },
           font: { size: 10, color: "#fff", strokeWidth: 2, strokeColor: "#000" },
         },
@@ -144,7 +148,12 @@ export default function StarPower() {
         const nodeId = params.nodes[0];
         if (typeof nodeId === "number") {
           const node = nodesRef.current.get(nodeId) as any;
-          setSelected({ type: "actor", nodeId, label: node?.label?.split("\n")[0] ?? "Actor" });
+          setSelected({
+            type: "actor",
+            nodeId,
+            label: node?.label?.split("\n")[0] ?? "Actor",
+            isPrestigious: prestigeSet.current.has(nodeId),
+          });
         } else if (typeof nodeId === "string" && nodeId.startsWith("m-")) {
           const movieNodeId = parseInt(nodeId.slice(2));
           const node = nodesRef.current.get(nodeId) as any;
@@ -157,50 +166,70 @@ export default function StarPower() {
   };
 
   // ---------------------------------------------------------------------------
-  // Fetch star power (full graph)
+  // Fetch prestige network
   // ---------------------------------------------------------------------------
 
-  const fetchStarPower = () => {
+  const fetchPrestige = () => {
     setLoading(true);
     setError("");
-    fetch(`/api/star-power/all?threshold=${threshold}`)
-      .then((r) => { if (!r.ok) throw new Error("Request failed"); return r.json() as Promise<StarPowerResponse>; })
+
+    const qs = new URLSearchParams({
+      min_rating:      String(minRating),
+      award_directors: String(awardDirs),
+      min_shared:      String(minShared),
+      ...(genre ? { genre } : {}),
+    });
+
+    fetch(`/api/prestige-network/?${qs}`)
+      .then((r) => { if (!r.ok) throw new Error("Request failed"); return r.json() as Promise<PrestigeResponse>; })
       .then((data) => {
         nodesRef.current.clear();
         edgesRef.current.clear();
         actorMapRef.current.clear();
+        prestigeSet.current.clear();
         setExpandedSet(new Set());
-        setSpDoneSet(new Set(data.actors.map((a) => a.NodeID))); // full SPI already shown
-        setPrestigeDoneSet(new Set());
+        setSpDoneSet(new Set());
+        setPrestigeDoneSet(new Set(data.prestigiousActors.map((a) => a.NodeID)));
         setCastDoneSet(new Set());
         setSelected(null);
 
-        if (data.actors.length === 0) {
-          setError(`No actors qualify with a Star Power Index ≥ ${threshold}.`);
+        if (data.prestigiousActors.length === 0) {
+          setError("No prestigious films matched those filters.");
           setHasGraph(false);
           return;
         }
 
-        data.actors.forEach((a) => {
-          nodesRef.current.add(personNode(
-            a.NodeID, `${a.Name}\nSPI: ${a.StarPowerIndex}`, "#e8a838",
-            15 + a.StarPowerIndex * 2, a.PhotoURL,
-            `Star Power Index: ${a.StarPowerIndex} · Click to see options`
-          ));
+        setSummary(
+          `${data.prestigiousMovies.length} film${data.prestigiousMovies.length !== 1 ? "s" : ""} · ` +
+          `${data.prestigiousActors.length} actor${data.prestigiousActors.length !== 1 ? "s" : ""} · ` +
+          `${data.prestigiousDirectors.length} director${data.prestigiousDirectors.length !== 1 ? "s" : ""}`
+        );
+
+        data.prestigiousActors.forEach((a) => {
+          nodesRef.current.add(personNode(a.NodeID, a.Name, "#e8a838", 24, a.PhotoURL, "Click to see options"));
           actorMapRef.current.set(a.NodeID, a.ActorID);
+          prestigeSet.current.add(a.NodeID);
         });
 
-        data.movies.forEach((m) => {
-          nodesRef.current.add({ id: `m-${m.NodeID}`, label: `${m.Title}\n⭐ ${m.Rating}`, title: m.Title, shape: "dot", color: "#9b59b6", font: { color: "#fff" }, size: 16 });
+        data.prestigiousMovies.forEach((m) => {
+          nodesRef.current.add({ id: `m-${m.NodeID}`, label: `${m.Title}\n⭐ ${m.Rating}`, title: `${m.Title}\nRating: ${m.Rating}${m.Genre ? `\nGenre: ${m.Genre}` : ""}`, color: "#9b59b6", font: { color: "#fff" }, size: 16 });
         });
 
-        data.directors.forEach((d) => {
-          nodesRef.current.add(personNode(`d-${d.NodeID}`, d.Name, "#e67e22", 14, d.PhotoURL));
+        data.prestigiousDirectors.forEach((d) => {
+          nodesRef.current.add(personNode(`d-${d.NodeID}`, d.Name, "#e67e22", 18, d.PhotoURL, `${d.Name}${d.Awards ? `\n🏆 ${d.Awards}` : ""}`));
         });
 
-        data.edges.forEach((e) => {
-          const from = e.type === "ACTED_IN" ? e.source : `d-${e.source}`;
-          edgesRef.current.add({ id: `sp-${e.edgeId}`, from, to: `m-${e.target}`, dashes: e.type === "DIRECTED", color: { color: e.type === "ACTED_IN" ? "#9b59b6" : "#e67e22" } });
+        data.coStarEdges.forEach((e) => {
+          const id = `cs-${Math.min(e.source, e.target)}-${Math.max(e.source, e.target)}`;
+          edgesRef.current.add({ id, from: e.source, to: e.target, value: e.weight, length: Math.max(80, 300 / e.weight), label: String(e.weight), title: `${e.weight} shared prestigious movie${e.weight > 1 ? "s" : ""}`, color: { color: "#aaa" } });
+        });
+
+        data.actedInEdges.forEach((e) => {
+          edgesRef.current.add({ id: `ai-${e.EdgeID}`, from: e.actorNodeId, to: `m-${e.movieNodeId}`, color: { color: "#9b59b6" }, width: 1, arrows: "" });
+        });
+
+        data.directedEdges.forEach((e) => {
+          edgesRef.current.add({ id: `di-${e.EdgeID}`, from: `d-${e.directorNodeId}`, to: `m-${e.movieNodeId}`, dashes: true, color: { color: "#e67e22" }, width: 1, arrows: "" });
         });
 
         setHasGraph(true);
@@ -244,21 +273,23 @@ export default function StarPower() {
       .finally(() => setLoading(false));
   };
 
-  const handleGetStarPowerForNode = (nodeId: number) => {
+  const handleGetStarPower = (nodeId: number) => {
     if (spDoneSet.has(nodeId)) return;
     const actorId = actorMapRef.current.get(nodeId);
     if (!actorId) return;
+
     setLoading(true);
     setError("");
-    fetch(`/api/star-power/?actor_id=${encodeURIComponent(actorId)}&threshold=${threshold}`)
-      .then((r) => { if (!r.ok) throw new Error("Star power request failed"); return r.json() as Promise<SingleSPResponse>; })
+    fetch(`/api/star-power/?actor_id=${encodeURIComponent(actorId)}&threshold=${spiThreshold}`)
+      .then((r) => { if (!r.ok) throw new Error("Star power request failed"); return r.json() as Promise<StarPowerResponse>; })
       .then((data) => {
         const spi = data.actors[0]?.StarPowerIndex ?? 0;
         const existing = nodesRef.current.get(nodeId) as any;
-        if (existing) nodesRef.current.update({ id: nodeId, label: `${existing.label.split(" (SPI")[0].split("\nSPI")[0]} (SPI: ${spi})` });
+        if (existing) nodesRef.current.update({ id: nodeId, label: `${existing.label.split(" (SPI")[0]} (SPI: ${spi})` });
+
         data.movies.forEach((m) => {
           if (!nodesRef.current.get(`m-${m.NodeID}`))
-            nodesRef.current.add({ id: `m-${m.NodeID}`, label: `${m.Title}\n⭐ ${m.Rating}`, title: m.Title, color: "#9b59b6", font: { color: "#fff" }, size: 16, shape: "dot" });
+            nodesRef.current.add({ id: `m-${m.NodeID}`, label: `${m.Title}\n⭐ ${m.Rating}`, title: m.Title, color: "#9b59b6", font: { color: "#fff" }, size: 16 });
         });
         data.directors.forEach((d) => {
           if (!nodesRef.current.get(`d-${d.NodeID}`))
@@ -288,29 +319,37 @@ export default function StarPower() {
     fetch(`/api/prestige-network/?${qs}`)
       .then((r) => { if (!r.ok) throw new Error("Prestige request failed"); return r.json() as Promise<PrestigeResponse>; })
       .then((data) => {
-        const myMovieIds = new Set(data.actedInEdges.filter((e) => e.actorNodeId === nodeId).map((e) => e.movieNodeId));
-        if (myMovieIds.size === 0) { setError("This actor has no prestigious films under the current prestige filters."); return; }
-
-        const myMovies    = data.prestigiousMovies.filter((m) => myMovieIds.has(m.NodeID));
-        const myDirEdges  = data.directedEdges.filter((e) => myMovieIds.has(e.movieNodeId));
-        const myDirIds    = new Set(myDirEdges.map((e) => e.directorNodeId));
-        const myDirectors = data.prestigiousDirectors.filter((d) => myDirIds.has(d.NodeID));
+        const myMovieIds = new Set(
+          data.actedInEdges.filter((e) => e.actorNodeId === nodeId).map((e) => e.movieNodeId)
+        );
+        if (myMovieIds.size === 0) {
+          setError("This actor has no prestigious films under the current prestige filters.");
+          return;
+        }
+        const myMovies   = data.prestigiousMovies.filter((m) => myMovieIds.has(m.NodeID));
+        const myDirEdges = data.directedEdges.filter((e) => myMovieIds.has(e.movieNodeId));
+        const myDirIds   = new Set(myDirEdges.map((e) => e.directorNodeId));
+        const myDirs     = data.prestigiousDirectors.filter((d) => myDirIds.has(d.NodeID));
 
         myMovies.forEach((m) => {
           if (!nodesRef.current.get(`m-${m.NodeID}`))
             nodesRef.current.add({ id: `m-${m.NodeID}`, label: `${m.Title}\n⭐ ${m.Rating}`, title: `${m.Title}\nRating: ${m.Rating}${m.Genre ? `\nGenre: ${m.Genre}` : ""}`, color: "#9b59b6", font: { color: "#fff" }, size: 16, shape: "dot" });
         });
-        myDirectors.forEach((d) => {
+        myDirs.forEach((d) => {
           if (!nodesRef.current.get(`d-${d.NodeID}`))
             nodesRef.current.add(personNode(`d-${d.NodeID}`, d.Name, "#e67e22", 14, d.PhotoURL, `${d.Name}${d.Awards ? `\n🏆 ${d.Awards}` : ""}`));
         });
-        data.actedInEdges.filter((e) => e.actorNodeId === nodeId && myMovieIds.has(e.movieNodeId)).forEach((e) => {
-          const eid = `ai-${e.EdgeID}`;
-          if (!edgesRef.current.get(eid)) edgesRef.current.add({ id: eid, from: nodeId, to: `m-${e.movieNodeId}`, color: { color: "#9b59b6" }, width: 1, arrows: "" });
-        });
+        data.actedInEdges
+          .filter((e) => e.actorNodeId === nodeId && myMovieIds.has(e.movieNodeId))
+          .forEach((e) => {
+            const eid = `ai-${e.EdgeID}`;
+            if (!edgesRef.current.get(eid))
+              edgesRef.current.add({ id: eid, from: nodeId, to: `m-${e.movieNodeId}`, color: { color: "#9b59b6" }, width: 1, arrows: "" });
+          });
         myDirEdges.forEach((e) => {
           const eid = `di-${e.EdgeID}`;
-          if (!edgesRef.current.get(eid)) edgesRef.current.add({ id: eid, from: `d-${e.directorNodeId}`, to: `m-${e.movieNodeId}`, dashes: true, color: { color: "#e67e22" }, width: 1, arrows: "" });
+          if (!edgesRef.current.get(eid))
+            edgesRef.current.add({ id: eid, from: `d-${e.directorNodeId}`, to: `m-${e.movieNodeId}`, dashes: true, color: { color: "#e67e22" }, width: 1, arrows: "" });
         });
         setPrestigeDoneSet((prev) => new Set([...prev, nodeId]));
       })
@@ -350,29 +389,55 @@ export default function StarPower() {
   // Render
   // ---------------------------------------------------------------------------
 
-  const sel            = selected;
-  const isExpanded     = sel?.type === "actor" && expandedSet.has(sel.nodeId);
-  const isSpDone       = sel?.type === "actor" && spDoneSet.has(sel.nodeId);
-  const isPrestigeDone = sel?.type === "actor" && prestigeDoneSet.has(sel.nodeId);
-  const isCastDone     = sel?.type === "movie" && castDoneSet.has(sel.movieNodeId);
+  const sel             = selected;
+  const isExpanded      = sel?.type === "actor" && expandedSet.has(sel.nodeId);
+  const isSpDone        = sel?.type === "actor" && spDoneSet.has(sel.nodeId);
+  const isPrestigeDone  = sel?.type === "actor" && prestigeDoneSet.has(sel.nodeId);
+  const isCastDone      = sel?.type === "movie" && castDoneSet.has(sel.movieNodeId);
 
   return (
     <div>
-      <h1>Star Power Index</h1>
+      <h1>Prestige Network</h1>
       <p style={{ color: "#888", fontSize: "0.9rem", marginBottom: "1rem" }}>
-        An actor has a Star Power Index of <em>h</em> if they appeared in at least <em>h</em> films each rated ≥ <em>h</em> on a 0–10 scale.
+        Actors connected through prestigious films. Adjust the filters below and click Generate.
       </p>
 
-      <div style={{ display: "flex", gap: "0.75rem", marginBottom: "1rem", alignItems: "center" }}>
+      {/* Filter controls */}
+      <div style={{ display: "flex", gap: "1rem", marginBottom: "1rem", alignItems: "center", flexWrap: "wrap" }}>
+
         <label style={{ display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.9rem", color: "#ccc" }}>
-          Show actors with SPI ≥
-          <input type="number" min={1} max={10} value={threshold}
-            onChange={(e) => setThreshold(Math.max(1, Math.min(10, Number(e.target.value))))}
-            style={{ width: "52px", padding: "0.5rem 0.3rem", borderRadius: "4px", border: "1px solid #ccc", textAlign: "center" }} />
+          Min rating
+          <input type="number" min={0} max={10} step={0.5} value={minRating}
+            onChange={(e) => setMinRating(Math.max(0, Math.min(10, Number(e.target.value))))}
+            style={{ width: "58px", padding: "0.4rem 0.3rem", borderRadius: "4px", border: "1px solid #ccc", textAlign: "center" }} />
         </label>
-        <button onClick={fetchStarPower} disabled={loading} style={{ padding: "0.5rem 1rem" }}>
+
+        <label style={{ display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.9rem", color: "#ccc", cursor: "pointer" }}>
+          <input type="checkbox" checked={awardDirs} onChange={(e) => setAwardDirs(e.target.checked)} />
+          Include award-winning directors
+        </label>
+
+        <label style={{ display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.9rem", color: "#ccc" }}>
+          Min shared films (co-star edges)
+          <input type="number" min={1} max={20} value={minShared}
+            onChange={(e) => setMinShared(Math.max(1, Number(e.target.value)))}
+            style={{ width: "52px", padding: "0.4rem 0.3rem", borderRadius: "4px", border: "1px solid #ccc", textAlign: "center" }} />
+        </label>
+
+        <label style={{ display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.9rem", color: "#ccc" }}>
+          Genre
+          <select value={genre} onChange={(e) => setGenre(e.target.value)}
+            style={{ padding: "0.4rem 0.5rem", borderRadius: "4px", border: "1px solid #ccc", background: "#1a1a1e", color: "#e8e6e0" }}>
+            <option value="">All genres</option>
+            {genres.map((g) => <option key={g} value={g}>{g}</option>)}
+          </select>
+        </label>
+
+        <button onClick={fetchPrestige} disabled={loading} style={{ padding: "0.5rem 1.2rem" }}>
           {loading ? "Loading…" : "Generate"}
         </button>
+
+        {hasGraph && summary && <span style={{ fontSize: "0.8rem", color: "#666" }}>{summary}</span>}
       </div>
 
       {error && <p style={{ color: "red", margin: "0 0 0.5rem" }}>{error}</p>}
@@ -387,7 +452,7 @@ export default function StarPower() {
           color: "#555", fontSize: "0.9rem",
         }}
       >
-        {!hasGraph && !loading && "Set a threshold and click Generate"}
+        {!hasGraph && !loading && "Set filters and click Generate"}
       </div>
 
       {/* Action panel */}
@@ -395,11 +460,11 @@ export default function StarPower() {
         <div style={{ marginTop: "1rem", padding: "1rem 1.2rem", background: "#13131a", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "10px" }}>
           <p style={{ margin: "0 0 0.9rem", fontSize: "1rem", fontWeight: 600, color: "#e8e6e0" }}>
             Selected:{" "}
-            <span style={{ color: sel.type === "actor" ? "#e8a838" : "#9b59b6" }}>
-              {sel.type === "actor" ? sel.label : sel.label}
+            <span style={{ color: sel.type === "movie" ? "#9b59b6" : sel.isPrestigious ? "#e8a838" : "#4a90d9" }}>
+              {sel.label}
             </span>
             <span style={{ marginLeft: "0.5rem", fontSize: "0.75rem", color: "#888", fontWeight: 400 }}>
-              {sel.type === "actor" ? "actor" : "movie"}
+              {sel.type === "movie" ? "movie" : sel.isPrestigious ? "prestigious actor" : "actor"}
             </span>
           </p>
 
@@ -416,21 +481,21 @@ export default function StarPower() {
                 </p>
               </div>
 
-              {/* Get Star Power (per-node) */}
+              {/* Get Star Power */}
               <div style={actionCard(isSpDone)}>
                 <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap", marginBottom: "0.2rem" }}>
-                  <button style={actionBtn(isSpDone, isSpDone || loading)} onClick={() => handleGetStarPowerForNode(sel.nodeId)} disabled={isSpDone || loading}>
+                  <button style={actionBtn(isSpDone, isSpDone || loading)} onClick={() => handleGetStarPower(sel.nodeId)} disabled={isSpDone || loading}>
                     {isSpDone ? "✓ Star Power Shown" : "Get Star Power"}
                   </button>
                   <label style={{ display: "flex", alignItems: "center", gap: "0.3rem", fontSize: "0.8rem", color: "#888" }}>
                     h ≥
-                    <input type="number" min={1} max={10} value={threshold}
-                      onChange={(e) => setThreshold(Math.max(1, Math.min(10, Number(e.target.value))))}
+                    <input type="number" min={1} max={10} value={spiThreshold}
+                      onChange={(e) => setSpiThreshold(Math.max(1, Math.min(10, Number(e.target.value))))}
                       style={{ width: "42px", padding: "0.2rem", borderRadius: "3px", border: "1px solid #555", background: "#222", color: "#ccc", textAlign: "center" }} />
                   </label>
                 </div>
                 <p style={{ margin: 0, fontSize: "0.8rem", color: "#888", lineHeight: 1.4 }}>
-                  Overlay the films that contribute to <strong style={{ color: "#bbb" }}>{sel.label}</strong>'s Star Power Index — useful for co-stars that joined from another expansion.
+                  Overlay the films that contribute to <strong style={{ color: "#bbb" }}>{sel.label}</strong>'s Star Power Index. New films in purple, directors in orange.
                 </p>
               </div>
 
@@ -438,30 +503,21 @@ export default function StarPower() {
               <div style={actionCard(isPrestigeDone)}>
                 <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap", marginBottom: "0.2rem" }}>
                   <button style={actionBtn(isPrestigeDone, isPrestigeDone || loading)} onClick={() => handleGetPrestige(sel.nodeId)} disabled={isPrestigeDone || loading}>
-                    {isPrestigeDone ? "✓ Prestige Shown" : "Get Prestige Films"}
+                    {isPrestigeDone ? "✓ Prestige Films Shown" : "Get Prestige Films"}
                   </button>
-                </div>
-                <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", marginBottom: "0.4rem" }}>
-                  <label style={{ display: "flex", alignItems: "center", gap: "0.3rem", fontSize: "0.75rem", color: "#888" }}>
+                  <label style={{ display: "flex", alignItems: "center", gap: "0.3rem", fontSize: "0.8rem", color: "#888" }}>
                     Min rating
-                    <input type="number" min={0} max={10} step={0.5} value={minRating} onChange={(e) => setMinRating(Math.max(0, Math.min(10, Number(e.target.value))))}
-                      style={{ width: "46px", padding: "0.2rem", borderRadius: "3px", border: "1px solid #555", background: "#222", color: "#ccc", textAlign: "center" }} />
+                    <input type="number" min={0} max={10} step={0.5} value={minRating}
+                      onChange={(e) => setMinRating(Math.max(0, Math.min(10, Number(e.target.value))))}
+                      style={{ width: "48px", padding: "0.2rem", borderRadius: "3px", border: "1px solid #555", background: "#222", color: "#ccc", textAlign: "center" }} />
                   </label>
-                  <label style={{ display: "flex", alignItems: "center", gap: "0.3rem", fontSize: "0.75rem", color: "#888", cursor: "pointer" }}>
+                  <label style={{ display: "flex", alignItems: "center", gap: "0.3rem", fontSize: "0.8rem", color: "#888", cursor: "pointer" }}>
                     <input type="checkbox" checked={awardDirs} onChange={(e) => setAwardDirs(e.target.checked)} />
-                    Award directors
-                  </label>
-                  <label style={{ display: "flex", alignItems: "center", gap: "0.3rem", fontSize: "0.75rem", color: "#888" }}>
-                    Genre
-                    <select value={genre} onChange={(e) => setGenre(e.target.value)}
-                      style={{ padding: "0.2rem", borderRadius: "3px", border: "1px solid #555", background: "#222", color: "#ccc" }}>
-                      <option value="">All</option>
-                      {genres.map((g) => <option key={g} value={g}>{g}</option>)}
-                    </select>
+                    Award dirs
                   </label>
                 </div>
                 <p style={{ margin: 0, fontSize: "0.8rem", color: "#888", lineHeight: 1.4 }}>
-                  Show prestigious films <strong style={{ color: "#bbb" }}>{sel.label}</strong> appeared in — films qualify by rating threshold or award-winning director.
+                  Add <strong style={{ color: "#bbb" }}>{sel.label}</strong>'s prestigious films — already shown for original prestige actors.
                 </p>
               </div>
 
@@ -488,8 +544,8 @@ export default function StarPower() {
 
       {/* Legend */}
       <div style={{ marginTop: "0.75rem", fontSize: "0.8rem", color: "#666", display: "flex", gap: "1.2rem", flexWrap: "wrap" }}>
-        <span><span style={{ color: "#e8a838" }}>●</span> Qualifying actor (node size = SPI)</span>
-        <span><span style={{ color: "#9b59b6" }}>●</span> Contributing movie — click to expand cast</span>
+        <span><span style={{ color: "#e8a838" }}>●</span> Prestigious actor</span>
+        <span><span style={{ color: "#9b59b6" }}>●</span> Movie — click to expand cast</span>
         <span><span style={{ color: "#e67e22" }}>●</span> Director</span>
         <span><span style={{ color: "#4a90d9" }}>●</span> Co-star / cast (expanded)</span>
       </div>
