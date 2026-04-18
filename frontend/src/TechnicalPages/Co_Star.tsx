@@ -35,7 +35,10 @@ export default function Co_Star() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [contextMenu, setContextMenu] = useState<ContextMenu>({
-    visible: false, x: 0, y: 0, nodeId: null,
+    visible: false,
+    x: 0,
+    y: 0,
+    nodeId: null,
   });
 
   const containerRef = useRef<HTMLDivElement>(null);
@@ -43,14 +46,18 @@ export default function Co_Star() {
   const nodesRef = useRef(new DataSet<any>());
   const edgesRef = useRef(new DataSet<any>());
   const actorMapRef = useRef(new Map<number, string>()); // NodeID -> ActorID
-  const expandedRef = useRef(new Set<number>());         // NodeIDs already expanded
+  const expandedRef = useRef(new Set<number>()); // NodeIDs already expanded
 
   const mergeData = (data: CoStarResponse, isInitial: boolean) => {
     const { center, coStars, edges } = data;
 
     // Center node: gold on first query, green when expanded via right-click
     if (nodesRef.current.get(center.NodeID)) {
-      nodesRef.current.update({ id: center.NodeID, color: "#27ae60", size: 24 });
+      nodesRef.current.update({
+        id: center.NodeID,
+        color: "#27ae60",
+        size: 24,
+      });
     } else {
       nodesRef.current.add({
         id: center.NodeID,
@@ -107,18 +114,30 @@ export default function Co_Star() {
         edges: {
           scaling: { min: 1, max: 6 },
           color: { color: "#aaa" },
-          font: { size: 11, color: "#fff", strokeWidth: 2, strokeColor: "#000" },
+          font: {
+            size: 11,
+            color: "#fff",
+            strokeWidth: 2,
+            strokeColor: "#000",
+          },
         },
         nodes: { shape: "dot", borderWidth: 0 },
         interaction: { hover: true, tooltipDelay: 100 },
-      }
+      },
     );
 
     networkRef.current.on("oncontext", (params: any) => {
       params.event.preventDefault();
-      const nodeId = networkRef.current?.getNodeAt(params.pointer.DOM) as number | undefined;
+      const nodeId = networkRef.current?.getNodeAt(params.pointer.DOM) as
+        | number
+        | undefined;
       if (nodeId != null) {
-        setContextMenu({ visible: true, x: params.event.clientX, y: params.event.clientY, nodeId });
+        setContextMenu({
+          visible: true,
+          x: params.event.clientX,
+          y: params.event.clientY,
+          nodeId,
+        });
       }
     });
   };
@@ -130,7 +149,10 @@ export default function Co_Star() {
 
     fetch(`/api/costar/?actor_id=${encodeURIComponent(id)}`)
       .then((res) => {
-        if (!res.ok) throw new Error(res.status === 404 ? "Actor not found" : "Request failed");
+        if (!res.ok)
+          throw new Error(
+            res.status === 404 ? "Actor not found" : "Request failed",
+          );
         return res.json();
       })
       .then((data: CoStarResponse) => {
@@ -188,11 +210,16 @@ export default function Co_Star() {
       setLoading(true);
       setError("");
       fetch(`/api/actors/name/${encodeURIComponent(actorName.trim())}`)
-        .then((res) => (res.ok ? res.json() : Promise.reject(new Error("Search failed"))))
+        .then((res) =>
+          res.ok ? res.json() : Promise.reject(new Error("Search failed")),
+        )
         .then((actors: Actor[]) => {
           if (actors.length === 0) setError("No actors found with that name.");
           else if (actors.length === 1) fetchCoStar(actors[0].ActorID, true);
-          else { setSuggestions(actors); setShowSuggestions(true); }
+          else {
+            setSuggestions(actors);
+            setShowSuggestions(true);
+          }
         })
         .catch((err) => setError(err.message))
         .finally(() => setLoading(false));
@@ -209,53 +236,75 @@ export default function Co_Star() {
 
   // Dismiss context menu on any outside click
   useEffect(() => {
-    const dismiss = () => setContextMenu({ visible: false, x: 0, y: 0, nodeId: null });
+    const dismiss = () =>
+      setContextMenu({ visible: false, x: 0, y: 0, nodeId: null });
     window.addEventListener("click", dismiss);
     return () => window.removeEventListener("click", dismiss);
   }, []);
 
   useEffect(() => {
-    return () => { networkRef.current?.destroy(); };
+    return () => {
+      networkRef.current?.destroy();
+    };
   }, []);
 
-  const contextMenuLabel = contextMenu.nodeId != null
-    ? (nodesRef.current.get(contextMenu.nodeId) as any)?.label
-    : null;
-  const alreadyExpanded = contextMenu.nodeId != null && expandedRef.current.has(contextMenu.nodeId);
+  const contextMenuLabel =
+    contextMenu.nodeId != null
+      ? (nodesRef.current.get(contextMenu.nodeId) as any)?.label
+      : null;
+  const alreadyExpanded =
+    contextMenu.nodeId != null && expandedRef.current.has(contextMenu.nodeId);
 
   return (
     <div>
       <h1>Co-Star Network</h1>
 
-      <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1rem", alignItems: "flex-start" }}>
+      <div
+        style={{
+          display: "flex",
+          gap: "0.5rem",
+          marginBottom: "1rem",
+          alignItems: "flex-start",
+        }}
+      >
         <div style={{ position: "relative" }}>
           <input
             type="text"
             placeholder="Actor name (e.g. Tom Hanks)"
             value={actorName}
-            onChange={(e) => { setActorName(e.target.value); setError(""); }}
+            onChange={(e) => {
+              setActorName(e.target.value);
+              setError("");
+            }}
             onKeyDown={(e) => e.key === "Enter" && handleSearch()}
             onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
             onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
-            style={{ padding: "0.5rem", width: "300px", borderRadius: "4px", border: "1px solid #ccc" }}
+            style={{
+              padding: "0.5rem",
+              width: "300px",
+              borderRadius: "4px",
+              border: "1px solid #ccc",
+            }}
           />
           {showSuggestions && suggestions.length > 0 && (
-            <ul style={{
-              position: "absolute",
-              top: "100%",
-              left: 0,
-              width: "100%",
-              background: "#1a1a1e",
-              border: "1px solid rgba(255,255,255,0.15)",
-              borderRadius: "4px",
-              boxShadow: "0 6px 16px rgba(0,0,0,0.5)",
-              listStyle: "none",
-              padding: 0,
-              margin: "3px 0 0",
-              zIndex: 200,
-              maxHeight: "220px",
-              overflowY: "auto",
-            }}>
+            <ul
+              style={{
+                position: "absolute",
+                top: "100%",
+                left: 0,
+                width: "100%",
+                background: "#1a1a1e",
+                border: "1px solid rgba(255,255,255,0.15)",
+                borderRadius: "4px",
+                boxShadow: "0 6px 16px rgba(0,0,0,0.5)",
+                listStyle: "none",
+                padding: 0,
+                margin: "3px 0 0",
+                zIndex: 200,
+                maxHeight: "220px",
+                overflowY: "auto",
+              }}
+            >
               {suggestions.map((a) => (
                 <li
                   key={a.NodeID}
@@ -270,12 +319,25 @@ export default function Co_Star() {
                     color: "#e8e6e0",
                     borderBottom: "1px solid rgba(255,255,255,0.06)",
                   }}
-                  onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.07)")}
-                  onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+                  onMouseEnter={(e) =>
+                    (e.currentTarget.style.background =
+                      "rgba(255,255,255,0.07)")
+                  }
+                  onMouseLeave={(e) =>
+                    (e.currentTarget.style.background = "transparent")
+                  }
                 >
                   <span>{a.Name}</span>
-                  {a.Nationality && <span style={{ fontSize: "0.8rem", color: "#666" }}>{a.Nationality}</span>}
-                  {a.DateOfBirth && <span style={{ fontSize: "0.8rem", color: "#666" }}>{a.DateOfBirth.slice(0, 4)}</span>}
+                  {a.Nationality && (
+                    <span style={{ fontSize: "0.8rem", color: "#666" }}>
+                      {a.Nationality}
+                    </span>
+                  )}
+                  {a.DateOfBirth && (
+                    <span style={{ fontSize: "0.8rem", color: "#666" }}>
+                      {a.DateOfBirth.slice(0, 4)}
+                    </span>
+                  )}
                 </li>
               ))}
             </ul>
@@ -295,7 +357,13 @@ export default function Co_Star() {
       <div style={{ position: "relative" }}>
         <div
           ref={containerRef}
-          style={{ width: "100%", height: "600px", border: "1px solid #ddd", borderRadius: "8px", background: "#000000" }}
+          style={{
+            width: "100%",
+            height: "600px",
+            border: "1px solid #ddd",
+            borderRadius: "8px",
+            background: "#000000",
+          }}
           onContextMenu={(e) => e.preventDefault()}
         />
 
@@ -315,7 +383,15 @@ export default function Co_Star() {
               overflow: "hidden",
             }}
           >
-            <div style={{ padding: "8px 12px", background: "#f5f5f5", fontSize: "0.8rem", color: "#555", borderBottom: "1px solid #eee" }}>
+            <div
+              style={{
+                padding: "8px 12px",
+                background: "#f5f5f5",
+                fontSize: "0.8rem",
+                color: "#555",
+                borderBottom: "1px solid #eee",
+              }}
+            >
               {contextMenuLabel ?? "Actor"}
             </div>
             <button
@@ -339,10 +415,25 @@ export default function Co_Star() {
         )}
       </div>
 
-      <div style={{ marginTop: "0.75rem", fontSize: "0.85rem", color: "#888", display: "flex", gap: "1.5rem" }}>
-        <span><span style={{ color: "#e8a838" }}>●</span> Starting actor</span>
-        <span><span style={{ color: "#27ae60" }}>●</span> Expanded</span>
-        <span><span style={{ color: "#4a90d9" }}>●</span> Co-star (right-click to expand)</span>
+      <div
+        style={{
+          marginTop: "0.75rem",
+          fontSize: "0.85rem",
+          color: "#888",
+          display: "flex",
+          gap: "1.5rem",
+        }}
+      >
+        <span>
+          <span style={{ color: "#e8a838" }}>●</span> Starting actor
+        </span>
+        <span>
+          <span style={{ color: "#27ae60" }}>●</span> Expanded
+        </span>
+        <span>
+          <span style={{ color: "#4a90d9" }}>●</span> Co-star (right-click to
+          expand)
+        </span>
       </div>
     </div>
   );
