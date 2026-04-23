@@ -43,5 +43,5 @@ Rest API is Documented with the swagger client. Docs can be found at http://loca
 ### TO FIX BROKEN DB
 
 ```bash
-docker exec entertainment-media-database-db-1 mysqldump -u admin -padmin --no-tablespaces mydatabase > db/dump.sql
+docker exec entertainment-media-database-db-1 mysql -u admin -padmin mydatabase < db/dump.sql
 ```
