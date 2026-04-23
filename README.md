@@ -38,3 +38,10 @@ All development should be done inside the dev container:
 ### REST API DOCUMENTATION
 
 Rest API is Documented with the swagger client. Docs can be found at http://localhost:5000/apidocs/
+
+
+### TO FIX BROKEN DB
+
+```bash
+docker exec entertainment-media-database-db-1 mysqldump -u admin -padmin --no-tablespaces mydatabase > db/dump.sql
+```
